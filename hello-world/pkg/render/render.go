@@ -12,7 +12,7 @@ var tc map[string]*template.Template
 
 func RenderTemplate(w http.ResponseWriter, tmpl string) {
 	//	create a template cache
-	tc, err := createTemplateCache()
+	tc, err := CreateTemplateCache()
 	if err != nil {
 		log.Fatalf("Error creating template cache: %q\n", err)
 	}
@@ -33,7 +33,7 @@ func RenderTemplate(w http.ResponseWriter, tmpl string) {
 	}
 }
 
-func createTemplateCache() (map[string]*template.Template, error) {
+func CreateTemplateCache() (map[string]*template.Template, error) {
 	myCache := map[string]*template.Template{}
 	//	get all files named *.page.gohtml from ./templates folder
 	pages, err := filepath.Glob("./templates/*.page.gohtml")
