@@ -6,23 +6,34 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+
+	"github.com/AlexL70/go-hello-world/pkg/config"
 )
 
-var tc map[string]*template.Template
+var app *config.AppConfig
+
+// set the config for render package
+func NewTemplates(ac *config.AppConfig) {
+	app = ac
+}
 
 func RenderTemplate(w http.ResponseWriter, tmpl string) {
-	//	create a template cache
-	tc, err := CreateTemplateCache()
-	if err != nil {
-		log.Fatalf("Error creating template cache: %q\n", err)
+	if !app.UseCache {
+		log.Println("Reloading templates' cache...")
+		tc, err := CreateTemplateCache()
+		if err != nil {
+			log.Printf("Error caching templates: %q\n", err)
+			return
+		}
+		app.TemplateCache = tc
 	}
 	//	get requested template from cache
-	t, ok := tc[tmpl]
+	t, ok := app.TemplateCache[tmpl]
 	if !ok {
 		log.Fatalf("Template called %q not found in cache.\n", tmpl)
 	}
 	buf := new(bytes.Buffer)
-	err = t.Execute(buf, nil)
+	err := t.Execute(buf, nil)
 	if err != nil {
 		log.Printf("Error executing template: %q\n", err)
 	}
