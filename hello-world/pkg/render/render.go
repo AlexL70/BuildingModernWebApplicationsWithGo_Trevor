@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/AlexL70/go-hello-world/pkg/config"
+	"github.com/AlexL70/go-hello-world/pkg/models"
 )
 
 var app *config.AppConfig
@@ -17,7 +18,11 @@ func NewTemplates(ac *config.AppConfig) {
 	app = ac
 }
 
-func RenderTemplate(w http.ResponseWriter, tmpl string) {
+func AddDefaultData(td *models.TemplateData) *models.TemplateData {
+	return td
+}
+
+func RenderTemplate(w http.ResponseWriter, tmpl string, td *models.TemplateData) {
 	if !app.UseCache {
 		log.Println("Reloading templates' cache...")
 		tc, err := CreateTemplateCache()
@@ -33,7 +38,8 @@ func RenderTemplate(w http.ResponseWriter, tmpl string) {
 		log.Fatalf("Template called %q not found in cache.\n", tmpl)
 	}
 	buf := new(bytes.Buffer)
-	err := t.Execute(buf, nil)
+	td = AddDefaultData(td)
+	err := t.Execute(buf, td)
 	if err != nil {
 		log.Printf("Error executing template: %q\n", err)
 	}
