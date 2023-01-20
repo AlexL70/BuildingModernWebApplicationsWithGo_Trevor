@@ -4,18 +4,31 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/AlexL70/go-hello-world/pkg/config"
 	"github.com/AlexL70/go-hello-world/pkg/handlers"
 	"github.com/AlexL70/go-hello-world/pkg/render"
+	"github.com/alexedwards/scs/v2"
 )
 
 const portNumber = ":8080"
 
+var app config.AppConfig
+
 // main is the main application function
 func main() {
 	// Configure application
-	var app config.AppConfig
+	//	change it to true when in production
+	app.InProduction = false
+
+	session := scs.New()
+	session.Lifetime = 24 * time.Hour
+	session.Cookie.Persist = true
+	session.Cookie.SameSite = http.SameSiteLaxMode
+	session.Cookie.Secure = app.InProduction
+	app.Session = session
+
 	tc, err := render.CreateTemplateCache()
 	if err != nil {
 		log.Fatalf("error creating template cache: %q\n", err)
