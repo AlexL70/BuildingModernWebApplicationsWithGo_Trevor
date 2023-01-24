@@ -8,6 +8,7 @@
     <!-- Bootstrap CSS link taken from https://getbootstrap.com/ -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" 
         integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.2.0/dist/css/datepicker-bs5.min.css">
     <style>
         .my-footer {
             background-color: #3a3a3a;
@@ -63,16 +64,16 @@
         <div class="col-md-6">
           <h1 class="text-center mt-5">Search for availability</h1>
             <form action="reservation.html" method="GET" class="needs-validation" novalidate>
-              <div class="row mb3">
+              <div class="row mb-3" id="reservationDates">
                 <div class="col">
                   <label for="start_date" class="form-label">Starting Date</label>
-                  <input required type="date" class="form-control" id="start_date" name="start_date" aria-describedby="startingDateHelp">
-                  <div id="startingDateHelp" class="form-text">Enter your starting date in the form of YYYY-MM-DD.</div>
+                  <input required type="text" class="form-control" id="start_date" name="start"
+                    placeholder="Arrival">
                 </div>
                 <div class="col">
                   <label for="end_date" class="form-label">Ending Date</label>
-                  <input required type="date" class="form-control" id="end_date" name="end_date" aria-describedby="endingDateHelp">
-                  <div id="endingDateHelp" class="form-text">Enter your ending date in the form of YYYY-MM-DD.</div>
+                  <input required type="text" class="form-control" id="end_date" name="end"
+                    placeholder="Departure">
                 </div>
               </div>
               <button type="submit" class="btn btn-primary">Search Availability</button>
@@ -89,6 +90,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js" integrity="sha384-mQ93GR66B00ZXjt0YO5KlohRA5SY2XofN4zfuZxLkoj1gXtW8ANNCe9d5Y3eG5eD" crossorigin="anonymous"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/vanillajs-datepicker@1.2.0/dist/js/datepicker-full.min.js"></script>
     <script>
       (() => {
         'use strict'
@@ -108,6 +110,13 @@
           }, false)
         })
       })()
+    </script>
+    <script>
+      const elem = document.getElementById("reservationDates");
+      const rangePicker = new DateRangePicker(elem, {
+        autohide: true,
+        format: "yyyy-mm-dd"
+      })
     </script>
 </body>
 </html>
