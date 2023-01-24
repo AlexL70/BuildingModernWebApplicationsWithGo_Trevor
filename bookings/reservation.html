@@ -20,9 +20,15 @@
             padding: 1em;
             font-size: 70%;
         }
+
+        .datepicker {
+          z-index: 10000;
+        }
+
         .room-image {
           width: 50%;
         }
+
         .notie-container {
           box-shadow: none;
         }
@@ -137,7 +143,22 @@
         attention.toast({msg: "Hello, World!", icon: "error"})
       })
       document.getElementById("intMsgButton").addEventListener("click", function(){
-        attention.success({title: "Modal title", msg: "Modal message"})
+        //attention.success({title: "Modal title", msg: "Modal message"})
+        let html = `
+          <form id="check-availability-form" action="" method="post" novalidate class"needs-validation">
+            <div class="row m-3" id="reservation-dates-modal">
+              <div class="col">
+                <label for="start" class="form-label">Arrival Date</label>
+                <input disabled required class="form-control" type="text" name="start" id="start" placeholder="Arrival">
+              </div>
+              <div class="col">
+                <label for="end" class="form-label">Departure Date</label>
+                <input disabled required class="form-control" type="text" name="end" id="end" placeholder="Departure">
+              </div>
+            </div>
+          </form>
+        `;
+        attention.custom({title: "Please, choose your dates:", msg: html})
       })
 
       function notify(message, msgType="success") {
@@ -151,14 +172,11 @@
       }
 
       function notifyModal(title, text, icon, confirmButtonText) {
-         Swal.fire({
+        Swal.fire({
           title: title,
           html: text,
-          //text: text,
           icon: icon,
           confirmButtonText: confirmButtonText,
-          //cancelButtonText: "No, I don't!",
-          //showCancelButton: true,
         })       
       }
 
@@ -216,10 +234,48 @@
           })
         }
 
+        let custom = async function(c) {
+          const {
+            msg = "",
+            title = "",
+          } = c;
+
+          const { value: formValues } = await Swal.fire({
+            title: title,
+            html: msg,
+            backdrop: false,
+            focusConfirm: false,
+            showCancelButton: true,
+            willOpen: () => {
+              const elem = document.getElementById("check-availability-form");
+              const rp = new DateRangePicker(elem, {
+                format: "yyyy-mm-dd",
+                autohide: true,
+                showOnFocus: true,
+              })
+            },
+            didOpen: () => {
+                document.getElementById("start").removeAttribute("disabled");
+                document.getElementById("end").removeAttribute("disabled");
+            },
+            preConfirm: () => {
+              return [
+                document.getElementById("start").value,
+                document.getElementById("end").value
+              ]
+            },
+          })
+
+          if (formValues) {
+            Swal.fire(JSON.stringify(formValues))
+          }
+        }
+
         return {
           toast: toast,
           success: success,
           error: error,
+          custom: custom,
         }
       }
     </script>
