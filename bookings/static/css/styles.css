@@ -7,8 +7,8 @@
     font-size: 70%;
 }
 
-.datepicker {
-  z-index: 10000;
+.swal2-html-container {
+  z-index: 1000000 !important;
 }
 
 .room-image {
