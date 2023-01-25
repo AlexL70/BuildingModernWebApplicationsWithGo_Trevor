@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/pkg/config"
-	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/pkg/models"
+	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/config"
+	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/models"
 	"github.com/justinas/nosurf"
 )
 

@@ -3,8 +3,8 @@ package main
 import (
 	"net/http"
 
-	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/pkg/config"
-	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/pkg/handlers"
+	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/config"
+	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/handlers"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )

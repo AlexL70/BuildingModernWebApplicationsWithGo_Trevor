@@ -6,9 +6,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/pkg/config"
-	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/pkg/models"
-	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/pkg/render"
+	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/config"
+	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/models"
+	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/render"
 )
 
 // Repo is the repository used by the handlers

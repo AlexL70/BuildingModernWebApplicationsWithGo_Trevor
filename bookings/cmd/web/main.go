@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/pkg/config"
-	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/pkg/handlers"
-	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/pkg/render"
+	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/config"
+	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/handlers"
+	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/render"
 	"github.com/alexedwards/scs/v2"
 )
 
