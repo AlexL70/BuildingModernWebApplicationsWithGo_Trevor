@@ -168,7 +168,7 @@
             title = "",
           } = c;
 
-          const { value: formValues } = await Swal.fire({
+          const result = await Swal.fire({
             title: title,
             html: msg,
             backdrop: false,
@@ -194,8 +194,10 @@
             },
           })
 
-          if (formValues) {
-            Swal.fire(JSON.stringify(formValues))
+          if (result && result.isConfirmed && !result.isDismissed && result.value) {
+            if (c.callback !== undefined) {
+              c.callback(result.value);
+            }
           }
         }
 
