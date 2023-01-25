@@ -40,8 +40,33 @@
         attention.custom({
           title: "Please, choose your dates:",
           msg: html,
+          willOpen: () => {
+            const elem = document.getElementById("check-availability-form");
+            const rp = new DateRangePicker(elem, {
+              format: "yyyy-mm-dd",
+              autohide: true,
+              showOnFocus: true,
+            })
+          },
+          didOpen: () => {
+              document.getElementById("start").removeAttribute("disabled");
+              document.getElementById("end").removeAttribute("disabled");
+          },
+          preConfirm: () => {
+            return [
+              document.getElementById("start").value,
+              document.getElementById("end").value
+            ]
+          },
           callback: function(result) {
-            fetch("/search-availability-json")
+            let form = document.getElementById("check-availability-form");
+            let formData = new FormData(form)
+            formData.append("csrf_token", "{{.CSRFToken}}")
+
+            fetch("/search-availability-json", {
+              method: "POST",
+              body: formData,
+            })
               .then(response => response.json())
               .then(data => {
                 console.log(data);

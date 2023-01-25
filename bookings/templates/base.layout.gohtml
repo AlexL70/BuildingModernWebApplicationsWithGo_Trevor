@@ -175,22 +175,19 @@
             focusConfirm: false,
             showCancelButton: true,
             willOpen: () => {
-              const elem = document.getElementById("check-availability-form");
-              const rp = new DateRangePicker(elem, {
-                format: "yyyy-mm-dd",
-                autohide: true,
-                showOnFocus: true,
-              })
+              if (c.willOpen !== undefined) {
+                c.willOpen();
+              }
             },
             didOpen: () => {
-                document.getElementById("start").removeAttribute("disabled");
-                document.getElementById("end").removeAttribute("disabled");
+              if (c.didOpen !== undefined) {
+                c.didOpen();
+              }
             },
             preConfirm: () => {
-              return [
-                document.getElementById("start").value,
-                document.getElementById("end").value
-              ]
+              if (c.preConfirm !== undefined) {
+                return c.preConfirm();
+              }
             },
           })
 
