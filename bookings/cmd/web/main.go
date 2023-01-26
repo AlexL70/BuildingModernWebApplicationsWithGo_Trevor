@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/gob"
 	"fmt"
 	"log"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/config"
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/handlers"
+	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/models"
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/render"
 	"github.com/alexedwards/scs/v2"
 )
@@ -19,9 +21,12 @@ var app config.AppConfig
 // main is the main application function
 func main() {
 	// Configure application
-	//	change it to true when in production
+	// change it to true when in production
 	app.InProduction = false
 
+	// Registering what we actually store in session
+	gob.Register(models.Reservation{})
+	// Creating a session instance
 	session := scs.New()
 	session.Lifetime = 24 * time.Hour
 	session.Cookie.Persist = true
