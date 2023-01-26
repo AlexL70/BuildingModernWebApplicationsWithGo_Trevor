@@ -97,7 +97,31 @@ func (m *Repository) Reservation(w http.ResponseWriter, r *http.Request) {
 
 // PostReservation handles the posting of the reservation form
 func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Handler is under construction"))
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	reservation := models.Reservation{
+		FirstName: r.Form.Get("first_name"),
+		LastName:  r.Form.Get("last_name"),
+		Phone:     r.Form.Get("phone"),
+		Email:     r.Form.Get("email"),
+	}
+
+	form := forms.New(r.PostForm)
+	form.Has("first_name", r)
+
+	if !form.Valid() {
+		data := map[string]any{}
+		data["reservation"] = reservation
+		render.RenderTemplate(w, r, "make-reservation.page.gohtml", &models.TemplateData{
+			Form: form,
+			Data: data,
+		})
+		return
+	}
 }
 
 // Contact is Contact page handler
