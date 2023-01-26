@@ -139,11 +139,15 @@ func (m *Repository) Contact(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Repository) ReservationSummary(w http.ResponseWriter, r *http.Request) {
+	const errMsg = "Cannot get reservation from the session"
 	reservation, ok := m.App.Session.Get(r.Context(), "reservation").(models.Reservation)
 	if !ok {
-		log.Println("Cannot get reservation from the session")
+		log.Println(errMsg)
+		m.App.Session.Put(r.Context(), "error", errMsg)
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
+	m.App.Session.Remove(r.Context(), "reservation")
 	var data = map[string]any{}
 	data["reservation"] = reservation
 	render.RenderTemplate(w, r, "reservation-summary.page.gohtml", &models.TemplateData{
