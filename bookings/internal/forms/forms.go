@@ -1,8 +1,10 @@
 package forms
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 // Form is a type encapsulating HTML form fields, their values,
@@ -23,10 +25,25 @@ func New(data url.Values) *Form {
 	return &Form{data, frmErrors{}}
 }
 
-// Has checks if form has data for required field filled in
+// Required checks for required fields
+func (f *Form) Required(fields ...string) {
+	for _, field := range fields {
+		value := f.Get(field)
+		if strings.TrimSpace(value) == "" {
+			f.Errors.Add(field, "This field cannot be empty.")
+		}
+	}
+}
+
+// Has checks if form has data for field filled in
 func (f *Form) Has(field string, r *http.Request) bool {
-	if r.Form.Get(field) == "" {
-		f.Errors.Add(field, "This field cannot be empty.")
+	return !(r.Form.Get(field) == "")
+}
+
+// MinLenghth checks for minimum field length
+func (f *Form) MinLength(field string, length int, r *http.Request) bool {
+	if len(r.Form.Get(field)) < length {
+		f.Errors.Add(field, fmt.Sprintf("This field must be at least %d characters long.", length))
 		return false
 	}
 	return true
