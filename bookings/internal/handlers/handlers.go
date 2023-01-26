@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/config"
+	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/forms"
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/models"
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/render"
 )
@@ -89,7 +90,14 @@ func (m *Repository) AvailabilityJSON(w http.ResponseWriter, r *http.Request) {
 
 // Reservation is Make Reservation page handler
 func (m *Repository) Reservation(w http.ResponseWriter, r *http.Request) {
-	render.RenderTemplate(w, r, "make-reservation.page.gohtml", &models.TemplateData{})
+	render.RenderTemplate(w, r, "make-reservation.page.gohtml", &models.TemplateData{
+		Form: forms.New(nil),
+	})
+}
+
+// PostReservation handles the posting of the reservation form
+func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Handler is under construction"))
 }
 
 // Contact is Contact page handler
