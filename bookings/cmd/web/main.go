@@ -20,6 +20,24 @@ var app config.AppConfig
 
 // main is the main application function
 func main() {
+	err := run()
+	if err != nil {
+		log.Fatalf("Error setting up application: %q", err)
+	}
+
+	//	Start server
+	fmt.Printf("Starting Web Server on port %s\n", portNumber)
+	srv := &http.Server{
+		Addr:    portNumber,
+		Handler: routes(&app),
+	}
+	err = srv.ListenAndServe()
+	if err != nil {
+		log.Fatalf("error starting server: %q", err)
+	}
+}
+
+func run() error {
 	// Configure application
 	// change it to true when in production
 	app.InProduction = false
@@ -36,7 +54,7 @@ func main() {
 
 	tc, err := render.CreateTemplateCache()
 	if err != nil {
-		log.Fatalf("error creating template cache: %q\n", err)
+		return fmt.Errorf("error creating template cache: %w", err)
 	}
 	app.TemplateCache = tc
 	app.UseCache = false
@@ -44,14 +62,5 @@ func main() {
 	repo := handlers.NewRepo(&app)
 	handlers.NewHandlers(repo)
 
-	//	Start server
-	fmt.Printf("Starting Web Server on port %s\n", portNumber)
-	srv := &http.Server{
-		Addr:    portNumber,
-		Handler: routes(&app),
-	}
-	err = srv.ListenAndServe()
-	if err != nil {
-		log.Fatalf("error starting server: %q", err)
-	}
+	return nil
 }
