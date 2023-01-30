@@ -29,32 +29,40 @@ func AddDefaultData(td *models.TemplateData, r *http.Request) *models.TemplateDa
 	return td
 }
 
-func RenderTemplate(w http.ResponseWriter, r *http.Request, tmpl string, td *models.TemplateData) {
+func RenderTemplate(w http.ResponseWriter, r *http.Request, tmpl string, td *models.TemplateData) error {
 	if !app.UseCache {
 		log.Println("Reloading templates' cache...")
 		tc, err := CreateTemplateCache()
 		if err != nil {
-			log.Printf("Error caching templates: %q\n", err)
-			return
+			err = fmt.Errorf("error caching templates: %w", err)
+			log.Println(err)
+			return err
 		}
 		app.TemplateCache = tc
 	}
 	//	get requested template from cache
 	t, ok := app.TemplateCache[tmpl]
 	if !ok {
-		log.Fatalf("Template called %q not found in cache.\n", tmpl)
+		err := fmt.Errorf("template called %q not found in cache", tmpl)
+		log.Println(err)
+		return err
 	}
 	buf := new(bytes.Buffer)
 	td = AddDefaultData(td, r)
 	err := t.Execute(buf, td)
 	if err != nil {
-		log.Printf("Error executing template: %q\n", err)
+		err := fmt.Errorf("error executing template: %w", err)
+		log.Println(err)
+		return err
 	}
 	//	render the template
 	_, err = buf.WriteTo(w)
 	if err != nil {
-		log.Printf("Error writing parsed template to response writer: %q\n", err)
+		err := fmt.Errorf("error writing parsed template to response writer: %w", err)
+		log.Println(err)
+		return err
 	}
+	return nil
 }
 
 func CreateTemplateCache() (map[string]*template.Template, error) {
