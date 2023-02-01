@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/config"
+	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/driver"
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/handlers"
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/helpers"
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/models"
@@ -24,10 +25,11 @@ var errorLog *log.Logger
 
 // main is the main application function
 func main() {
-	err := run()
+	db, err := run()
 	if err != nil {
 		log.Fatalf("Error setting up application: %q", err)
 	}
+	defer db.SQL.Close()
 
 	//	Start server
 	fmt.Printf("Starting Web Server on port %s\n", portNumber)
@@ -41,7 +43,7 @@ func main() {
 	}
 }
 
-func run() error {
+func run() (*driver.DB, error) {
 	// Configure application
 	// change it to true when in production
 	app.InProduction = false
@@ -61,16 +63,24 @@ func run() error {
 	session.Cookie.Secure = app.InProduction
 	app.Session = session
 
+	// connect to database
+	log.Println("Connecting to the database")
+	db, err := driver.ConnectSQL(os.Getenv("POSTGRESS_BOOKINGS_URL"))
+	if err != nil {
+		log.Fatal(fmt.Errorf("cannot connect to the database: %w. Dying", err))
+	}
+	log.Println("Connected to the DB!")
+
 	tc, err := render.CreateTemplateCache()
 	if err != nil {
-		return fmt.Errorf("error creating template cache: %w", err)
+		return nil, fmt.Errorf("error creating template cache: %w", err)
 	}
 	app.TemplateCache = tc
 	app.UseCache = false
 	render.NewTemplates(&app)
-	repo := handlers.NewRepo(&app)
+	repo := handlers.NewRepo(&app, db)
 	handlers.NewHandlers(repo)
 	helpers.NewHelpers(&app)
 
-	return nil
+	return db, nil
 }
