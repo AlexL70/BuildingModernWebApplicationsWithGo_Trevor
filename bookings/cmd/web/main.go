@@ -55,6 +55,9 @@ func run() (*driver.DB, error) {
 
 	// Registering what we actually store in session
 	gob.Register(models.Reservation{})
+	gob.Register(models.User{})
+	gob.Register(models.Room{})
+	gob.Register(models.Restriction{})
 	// Creating a session instance
 	session := scs.New()
 	session.Lifetime = 24 * time.Hour
@@ -77,7 +80,7 @@ func run() (*driver.DB, error) {
 	}
 	app.TemplateCache = tc
 	app.UseCache = false
-	render.NewTemplates(&app)
+	render.NewRenderer(&app)
 	repo := handlers.NewRepo(&app, db)
 	handlers.NewHandlers(repo)
 	helpers.NewHelpers(&app)

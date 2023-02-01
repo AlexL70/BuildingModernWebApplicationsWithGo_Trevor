@@ -37,7 +37,7 @@ func getSession() (*http.Request, error) {
 	return r, nil
 }
 
-func TestRenderTemplate(t *testing.T) {
+func TestTemplate(t *testing.T) {
 	oldPath := pathToTemplates
 	pathToTemplates = "./../../templates"
 
@@ -54,12 +54,12 @@ func TestRenderTemplate(t *testing.T) {
 
 	ww := &myWriter{}
 
-	err = RenderTemplate(ww, r, "home.page.gohtml", &models.TemplateData{})
+	err = Template(ww, r, "home.page.gohtml", &models.TemplateData{})
 	if err != nil {
 		t.Errorf("error rendering template: %q", err)
 	}
 
-	err = RenderTemplate(ww, r, "non-existent.page.gohtml", &models.TemplateData{})
+	err = Template(ww, r, "non-existent.page.gohtml", &models.TemplateData{})
 	if err == nil {
 		t.Error("error rendering template. Non-existent template was rendered without a error")
 	}
@@ -68,7 +68,7 @@ func TestRenderTemplate(t *testing.T) {
 }
 
 func TestNewTemplate(t *testing.T) {
-	NewTemplates(app)
+	NewRenderer(app)
 }
 
 func TestCreateTemplateCache(t *testing.T) {
