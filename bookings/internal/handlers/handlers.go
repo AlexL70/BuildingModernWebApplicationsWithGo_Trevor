@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -66,9 +65,40 @@ func (m *Repository) Availability(w http.ResponseWriter, r *http.Request) {
 
 // PostAvailability is Search Availability page hander
 func (m *Repository) PostAvailability(w http.ResponseWriter, r *http.Request) {
+	// dates format is 2023-01-01 -- stardard format is: "01/02 03:04:05PM '06 -0700"
+	layout := "2006-01-02"
 	start := r.Form.Get("start")
 	end := r.Form.Get("end")
-	w.Write([]byte(fmt.Sprintf("Start date is %s and end date is %s\n", start, end)))
+	startDate, err := time.Parse(layout, start)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	endDate, err := time.Parse(layout, end)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	available, err := m.DB.SearchAvailabilityForAllRooms(startDate, endDate)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	if len(available) == 0 {
+		m.App.Session.Put(r.Context(), "error", "No available rooms for this period. Sorry!")
+		http.Redirect(w, r, "/search-availability", http.StatusSeeOther)
+		return
+	}
+	data := map[string]any{}
+	data["rooms"] = available
+	res := models.Reservation{
+		StartDate: startDate,
+		EndDate:   endDate,
+	}
+	m.App.Session.Put(r.Context(), "reservation", res)
+	render.Template(w, r, "choose-room.page.gohtml", &models.TemplateData{Data: data})
 }
 
 type availabilityResponse struct {
