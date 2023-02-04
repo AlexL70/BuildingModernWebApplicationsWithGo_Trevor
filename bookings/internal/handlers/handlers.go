@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/render"
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/repository"
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/repository/dbrepo"
+	"github.com/go-chi/chi/v5"
 )
 
 // Repo is the repository used by the handlers
@@ -227,4 +229,20 @@ func (m *Repository) ReservationSummary(w http.ResponseWriter, r *http.Request) 
 	render.Template(w, r, "reservation-summary.page.gohtml", &models.TemplateData{
 		Data: data,
 	})
+}
+
+func (m *Repository) ChooseRoom(w http.ResponseWriter, r *http.Request) {
+	roomID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	reservation, ok := m.App.Session.Get(r.Context(), "reservation").(models.Reservation)
+	if !ok {
+		helpers.ServerError(w, errors.New("error getting reservation from the session"))
+		return
+	}
+	reservation.RoomId = roomID
+	m.App.Session.Put(r.Context(), "reservation", reservation)
+	http.Redirect(w, r, "/make-reservation", http.StatusSeeOther)
 }

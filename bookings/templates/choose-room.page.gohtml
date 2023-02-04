@@ -4,10 +4,12 @@
       <div class="row">
         <div class="col">
           <h1 class="text-center mt-4">Choose a Room</h1>
-          {{$rooms := index .Data "rooms"}}
-          {{range $rooms}}
-          <p>{{.RoomName}}</p>
-          {{end}}
+          <ul>
+            {{$rooms := index .Data "rooms"}}
+            {{range $rooms}}
+            <li><a href="/choose-room/{{.ID}}">{{.RoomName}}</a></li>
+            {{end}}
+          </ul>
         </div>
       </div>
     </div>
