@@ -2,6 +2,7 @@ package dbrepo
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/models"
@@ -116,4 +117,26 @@ func (m *postgresDBRepo) SearchAvailabilityForAllRooms(start, end time.Time) ([]
 	}
 
 	return result, nil
+}
+
+// GetRoomByID gets a room from DB by id
+func (m *postgresDBRepo) GetRoomByID(id int) (models.Room, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var room models.Room
+	query := `
+		select  id, room_name, created_at, updated_at
+		  from  rooms
+		 where  id = $1
+	`
+	row, err := m.DB.QueryContext(ctx, query, id)
+	if err != nil {
+		return room, err
+	}
+	if row.Next() {
+		err = row.Scan(&room.ID, &room.RoomName, &room.CreatedAt, &room.UpdatedAt)
+		return room, err
+	}
+	return room, fmt.Errorf("room with id %d is not found in DB", id)
 }

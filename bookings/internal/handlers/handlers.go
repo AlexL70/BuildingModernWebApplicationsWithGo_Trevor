@@ -122,12 +122,30 @@ func (m *Repository) AvailabilityJSON(w http.ResponseWriter, r *http.Request) {
 
 // Reservation is Make Reservation page handler
 func (m *Repository) Reservation(w http.ResponseWriter, r *http.Request) {
-	var emptyReservation models.Reservation
 	data := map[string]any{}
-	data["reservation"] = emptyReservation
+	reservation, ok := m.App.Session.Get(r.Context(), "reservation").(models.Reservation)
+	if !ok {
+		helpers.ServerError(w, errors.New("error getting reservation from the session"))
+		return
+	}
+	sd := reservation.StartDate.Format("2006-01-02")
+	ed := reservation.EndDate.Format("2006-01-02")
+	strMap := map[string]string{}
+	strMap["start_date"] = sd
+	strMap["end_date"] = ed
+
+	var err error
+	reservation.Room, err = m.DB.GetRoomByID(reservation.RoomId)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+
+	data["reservation"] = reservation
 	render.Template(w, r, "make-reservation.page.gohtml", &models.TemplateData{
-		Form: forms.New(nil),
-		Data: data,
+		Form:      forms.New(nil),
+		Data:      data,
+		StringMap: strMap,
 	})
 }
 
