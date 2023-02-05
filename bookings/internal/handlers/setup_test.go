@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"testing"
 	"time"
 
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/config"
@@ -24,7 +25,7 @@ var app config.AppConfig
 var session *scs.SessionManager
 var pathToTemplates = "./../../templates"
 
-func getRoutes() http.Handler {
+func TestMain(m *testing.M) {
 	// Configure application
 	// change it to true when in production
 	app.InProduction = false
@@ -35,7 +36,7 @@ func getRoutes() http.Handler {
 	// Registering what we actually store in session
 	gob.Register(models.Reservation{})
 	// Creating a session instance
-	session := scs.New()
+	session = scs.New()
 	session.Lifetime = 24 * time.Hour
 	session.Cookie.Persist = true
 	session.Cookie.SameSite = http.SameSiteLaxMode
@@ -54,7 +55,11 @@ func getRoutes() http.Handler {
 		DB:  dbrepo.NewTestingRepo(&app),
 	}
 	NewHandlers(repo)
+	getRoutes()
+	os.Exit(m.Run())
+}
 
+func getRoutes() http.Handler {
 	mux := chi.NewRouter()
 
 	mux.Use(middleware.Recoverer)
