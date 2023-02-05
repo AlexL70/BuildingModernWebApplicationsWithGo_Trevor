@@ -13,6 +13,7 @@ import (
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/config"
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/models"
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/render"
+	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/repository/dbrepo"
 	"github.com/alexedwards/scs/v2"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -48,7 +49,10 @@ func getRoutes() http.Handler {
 	app.TemplateCache = tc
 	app.UseCache = true
 	render.NewRenderer(&app)
-	repo := NewRepo(&app)
+	repo := &Repository{
+		App: &app,
+		DB:  dbrepo.NewTestingRepo(&app),
+	}
 	NewHandlers(repo)
 
 	mux := chi.NewRouter()
