@@ -1,1 +1,1 @@
-delete from rooms;
+delete from public.rooms;
