@@ -244,6 +244,7 @@ func (m *Repository) Contact(w http.ResponseWriter, r *http.Request) {
 	render.Template(w, r, "contact.page.gohtml", &models.TemplateData{})
 }
 
+// ReservationSummary displays Reservation Summary page after reservation has been made
 func (m *Repository) ReservationSummary(w http.ResponseWriter, r *http.Request) {
 	const errMsg = "Cannot get reservation from the session"
 	reservation, ok := m.App.Session.Get(r.Context(), "reservation").(models.Reservation)
@@ -267,6 +268,9 @@ func (m *Repository) ReservationSummary(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
+// ChooseRoom takes "id" parameter from URL, gets Reservation from the Session,
+// fill in RoomID with parameter's value, put it back to the Session and redirect
+// to make-reservation page
 func (m *Repository) ChooseRoom(w http.ResponseWriter, r *http.Request) {
 	roomID, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
@@ -279,6 +283,43 @@ func (m *Repository) ChooseRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	reservation.RoomId = roomID
+	m.App.Session.Put(r.Context(), "reservation", reservation)
+	http.Redirect(w, r, "/make-reservation", http.StatusSeeOther)
+}
+
+// BookRoom reads URL parameters (id,start,end), fill in Reservation
+// model, put it into Session and redirect to make-reservation page
+// so that user could make reservation of certain room for certain dates
+func (m *Repository) BookRoom(w http.ResponseWriter, r *http.Request) {
+	roomID, err := strconv.Atoi(r.URL.Query().Get("id"))
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	layout := "2006-01-02"
+	sd := r.URL.Query().Get("start")
+	startDate, err := time.Parse(layout, sd)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	ed := r.URL.Query().Get("end")
+	endDate, err := time.Parse(layout, ed)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	room, err := m.DB.GetRoomByID(roomID)
+	if err != nil {
+		helpers.ServerError(w, err)
+		return
+	}
+	reservation := models.Reservation{
+		RoomId:    roomID,
+		StartDate: startDate,
+		EndDate:   endDate,
+		Room:      room,
+	}
 	m.App.Session.Put(r.Context(), "reservation", reservation)
 	http.Redirect(w, r, "/make-reservation", http.StatusSeeOther)
 }
