@@ -156,7 +156,8 @@ func (m *Repository) Reservation(w http.ResponseWriter, r *http.Request) {
 	data := map[string]any{}
 	reservation, ok := m.App.Session.Get(r.Context(), "reservation").(models.Reservation)
 	if !ok {
-		helpers.ServerError(w, errors.New("error getting reservation from the session"))
+		m.App.Session.Put(r.Context(), "error", "Error getting reservation from the session")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
 	sd := reservation.StartDate.Format("2006-01-02")
@@ -168,7 +169,8 @@ func (m *Repository) Reservation(w http.ResponseWriter, r *http.Request) {
 	var err error
 	reservation.Room, err = m.DB.GetRoomByID(reservation.RoomId)
 	if err != nil {
-		helpers.ServerError(w, err)
+		m.App.Session.Put(r.Context(), "error", "Cannot find room in DB")
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
 	}
 

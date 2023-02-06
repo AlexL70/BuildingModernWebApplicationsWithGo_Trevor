@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"testing"
 
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/models"
@@ -19,16 +18,14 @@ type postData struct {
 var theTests = []struct {
 	name               string
 	url                string
-	method             string
-	params             []postData
 	expectedStatusCode int
 }{
-	//{"home", "/", "GET", []postData{}, http.StatusOK},
-	//{"about", "/about", "GET", []postData{}, http.StatusOK},
-	//{"gq", "/generals-quoters", "GET", []postData{}, http.StatusOK},
-	//{"ms", "/majors-suite", "GET", []postData{}, http.StatusOK},
-	//{"sa", "/search-availability", "GET", []postData{}, http.StatusOK},
-	//{"contact", "/contact", "GET", []postData{}, http.StatusOK},
+	{"home", "/", http.StatusOK},
+	{"about", "/about", http.StatusOK},
+	{"gq", "/generals-quoters", http.StatusOK},
+	{"ms", "/majors-suite", http.StatusOK},
+	{"sa", "/search-availability", http.StatusOK},
+	{"contact", "/contact", http.StatusOK},
 	//{"mkres", "/make-reservation", "GET", []postData{}, http.StatusOK},
 	//{"post-sa", "/search-availability", "POST", []postData{
 	//	{key: "start", value: "2024-01-01"},
@@ -46,32 +43,18 @@ var theTests = []struct {
 	//}, http.StatusOK},
 }
 
-func TestHandlers(t *testing.T) {
+func TestGetHandlers(t *testing.T) {
 	var routes = getRoutes()
 	ts := httptest.NewTLSServer(routes)
 	defer ts.Close()
 
 	for _, e := range theTests {
-		if e.method != "POST" {
-			resp, err := ts.Client().Get(ts.URL + e.url)
-			if err != nil {
-				t.Errorf("%s: error running request: %q", e.name, err)
-			}
-			if resp.StatusCode != e.expectedStatusCode {
-				t.Errorf("%s: bad status code. Expected %d, but got %d", e.name, e.expectedStatusCode, resp.StatusCode)
-			}
-		} else {
-			values := url.Values{}
-			for _, param := range e.params {
-				values.Add(param.key, param.value)
-			}
-			resp, err := ts.Client().PostForm(ts.URL+e.url, values)
-			if err != nil {
-				t.Errorf("%s: error running request: %q", e.name, err)
-			}
-			if resp.StatusCode != e.expectedStatusCode {
-				t.Errorf("%s: bad status code. Expected %d, but got %d", e.name, e.expectedStatusCode, resp.StatusCode)
-			}
+		resp, err := ts.Client().Get(ts.URL + e.url)
+		if err != nil {
+			t.Errorf("%s: error running request: %q", e.name, err)
+		}
+		if resp.StatusCode != e.expectedStatusCode {
+			t.Errorf("%s: bad status code. Expected %d, but got %d", e.name, e.expectedStatusCode, resp.StatusCode)
 		}
 	}
 }
@@ -95,6 +78,27 @@ func TestRepository_Reservation(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
 		t.Errorf("%s: bad status code. Expected %d, but got %d", "mkres", http.StatusOK, rr.Code)
+	}
+
+	// test situation when there is no reservation stored in session
+	req, _ = http.NewRequest("GET", "/make-reservation", nil)
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+	rr = httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusTemporaryRedirect {
+		t.Errorf("%s: bad status code. Expected %d, but got %d", "mkres", http.StatusTemporaryRedirect, rr.Code)
+	}
+	// test situation when room does not exist in DB
+	req, _ = http.NewRequest("GET", "/make-reservation", nil)
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+	rr = httptest.NewRecorder()
+	reservation.RoomId = 3
+	session.Put(ctx, "reservation", reservation)
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusTemporaryRedirect {
+		t.Errorf("%s: bad status code. Expected %d, but got %d", "mkres", http.StatusTemporaryRedirect, rr.Code)
 	}
 }
 
