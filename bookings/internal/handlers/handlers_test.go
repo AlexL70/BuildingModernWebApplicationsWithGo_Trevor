@@ -2,10 +2,13 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/models"
 )
@@ -100,6 +103,119 @@ func TestRepository_Reservation(t *testing.T) {
 	if rr.Code != http.StatusTemporaryRedirect {
 		t.Errorf("%s: bad status code. Expected %d, but got %d", "mkres", http.StatusTemporaryRedirect, rr.Code)
 	}
+}
+
+func TestRepository_PostReservation(t *testing.T) {
+	reservation := models.Reservation{
+		StartDate: time.Date(2060, 11, 11, 0, 0, 0, 0, time.UTC),
+		EndDate:   time.Date(2060, 11, 15, 0, 0, 0, 0, time.UTC),
+		RoomId:    1,
+	}
+	reqBody := "first_name=John"
+	reqBody = fmt.Sprintf("%s&%s", reqBody, "last_name=Smith")
+	reqBody = fmt.Sprintf("%s&%s", reqBody, "email=john.smith@email.com")
+	reqBody = fmt.Sprintf("%s&%s", reqBody, "phone=1111-222-333")
+	req, _ := http.NewRequest("POST", "/make-reservation", strings.NewReader(reqBody))
+	ctx := getCtx(req)
+	req = req.WithContext(ctx)
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	rr := httptest.NewRecorder()
+	session.Put(ctx, "reservation", reservation)
+	handler := http.HandlerFunc(Repo.PostReservation)
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusSeeOther {
+		t.Errorf("%s: bad status code. Expected %d, but got %d", "post-reservation", http.StatusSeeOther, rr.Code)
+	}
+
+	// missing reservation in session case
+	req, _ = http.NewRequest("POST", "/make-reservation", strings.NewReader(reqBody))
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	rr = httptest.NewRecorder()
+	_ = session.Pop(ctx, "reservation")
+	handler = http.HandlerFunc(Repo.PostReservation)
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusTemporaryRedirect {
+		t.Errorf("%s: bad status code. Expected %d, but got %d", "post-reservation-no-reservation", http.StatusTemporaryRedirect, rr.Code)
+	}
+
+	// missing post body case
+	req, _ = http.NewRequest("POST", "/make-reservation", nil)
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	rr = httptest.NewRecorder()
+	session.Put(ctx, "reservation", reservation)
+	handler = http.HandlerFunc(Repo.PostReservation)
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusTemporaryRedirect {
+		t.Errorf("%s: bad status code. Expected %d, but got %d", "post-reservation-no-body", http.StatusTemporaryRedirect, rr.Code)
+	}
+
+	// invalid form data case
+	reqBody = "first_name=Jo" // less thand 3 characters long
+	reqBody = fmt.Sprintf("%s&%s", reqBody, "last_name=Smith")
+	reqBody = fmt.Sprintf("%s&%s", reqBody, "email=john.smith@email.com")
+	reqBody = fmt.Sprintf("%s&%s", reqBody, "phone=1111-222-333")
+
+	req, _ = http.NewRequest("POST", "/make-reservation", strings.NewReader(reqBody))
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	rr = httptest.NewRecorder()
+	session.Put(ctx, "reservation", reservation)
+	handler = http.HandlerFunc(Repo.PostReservation)
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("%s: bad status code. Expected %d, but got %d", "post-reservation-invalid-form", http.StatusBadRequest, rr.Code)
+	}
+
+	// error inserting reservation to DB case
+	reqBody = "first_name=John"
+	reqBody = fmt.Sprintf("%s&%s", reqBody, "last_name=Smith")
+	reqBody = fmt.Sprintf("%s&%s", reqBody, "email=john.smith@email.com")
+	reqBody = fmt.Sprintf("%s&%s", reqBody, "phone=1111-222-333")
+
+	req, _ = http.NewRequest("POST", "/make-reservation", strings.NewReader(reqBody))
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	rr = httptest.NewRecorder()
+	reservation.RoomId = 2
+	session.Put(ctx, "reservation", reservation)
+	handler = http.HandlerFunc(Repo.PostReservation)
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusTemporaryRedirect {
+		t.Errorf("%s: bad status code. Expected %d, but got %d", "post-reservation-error-adding-reservation", http.StatusTemporaryRedirect, rr.Code)
+	}
+
+	// error inserting restriction to DB case
+	req, _ = http.NewRequest("POST", "/make-reservation", strings.NewReader(reqBody))
+	ctx = getCtx(req)
+	req = req.WithContext(ctx)
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	rr = httptest.NewRecorder()
+	reservation.RoomId = 1000
+	session.Put(ctx, "reservation", reservation)
+	handler = http.HandlerFunc(Repo.PostReservation)
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusTemporaryRedirect {
+		t.Errorf("%s: bad status code. Expected %d, but got %d", "post-reservation-error-adding-restriction", http.StatusTemporaryRedirect, rr.Code)
+	}
+
 }
 
 func getCtx(req *http.Request) context.Context {
