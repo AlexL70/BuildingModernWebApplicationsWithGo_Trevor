@@ -108,31 +108,53 @@ type availabilityResponse struct {
 	RoomID    string `json:"room_id"`
 	StartDate string `json:"start_date"`
 	EndDate   string `json:"end_date"`
+	Message   string `json:"message"`
 }
 
 // AvailabilityJSON handles request for availability and sends JSON response
 func (m *Repository) AvailabilityJSON(w http.ResponseWriter, r *http.Request) {
+	jsonError := func(err error, params ...string) {
+		// can't parse form so return appropriate JSON
+		resp := availabilityResponse{
+			OK:      false,
+			Message: "Internal server error",
+		}
+		if len(params) == 1 {
+			resp.Message = params[0]
+		}
+
+		out, _ := json.MarshalIndent(resp, "", "  ")
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(out)
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		jsonError(err)
+		return
+	}
+
 	sd := r.Form.Get("start")
 	ed := r.Form.Get("end")
 	layout := "2006-01-02"
 	startDate, err := time.Parse(layout, sd)
 	if err != nil {
-		helpers.ServerError(w, err)
+		jsonError(err, "Error parsing start date")
 		return
 	}
 	endDate, err := time.Parse(layout, ed)
 	if err != nil {
-		helpers.ServerError(w, err)
+		jsonError(err, "Error parsing end date")
 		return
 	}
 	roomID, err := strconv.Atoi(r.Form.Get("room_id"))
 	if err != nil {
-		helpers.ServerError(w, err)
+		jsonError(err, "Error parsing start date")
 		return
 	}
 	available, err := m.DB.SearchAvailabilityByDatesAndRoomID(startDate, endDate, roomID)
 	if err != nil {
-		helpers.ServerError(w, err)
+		jsonError(err, "Error searching availability")
 		return
 	}
 

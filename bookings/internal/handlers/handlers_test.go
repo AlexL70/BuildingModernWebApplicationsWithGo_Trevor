@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,11 +13,6 @@ import (
 
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/models"
 )
-
-type postData struct {
-	key   string
-	value string
-}
 
 var theTests = []struct {
 	name               string
@@ -216,6 +212,32 @@ func TestRepository_PostReservation(t *testing.T) {
 		t.Errorf("%s: bad status code. Expected %d, but got %d", "post-reservation-error-adding-restriction", http.StatusTemporaryRedirect, rr.Code)
 	}
 
+}
+
+func TestRepository_AvaliabilityJSON(t *testing.T) {
+	// no available rooms
+	reqBody := "start=2060-01-01"
+	reqBody = fmt.Sprintf("%s&%s", reqBody, "end=2060-01-02")
+	reqBody = fmt.Sprintf("%s&%s", reqBody, "room_id=1")
+	req, _ := http.NewRequest("POST", "/search-availability-json", strings.NewReader(reqBody))
+	ctx := getCtx(req)
+	req = req.WithContext(ctx)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(Repo.AvailabilityJSON)
+	handler.ServeHTTP(rr, req)
+
+	var j availabilityResponse
+	err := json.Unmarshal(rr.Body.Bytes(), &j)
+	if err != nil {
+		t.Error("error parsing json")
+	}
+	if j.Message != "" {
+		t.Errorf("not-available: got error when did not expected one: %q", j.Message)
+	}
+	if j.OK {
+		t.Errorf("not-available: got available room when does not expected")
+	}
 }
 
 func getCtx(req *http.Request) context.Context {
