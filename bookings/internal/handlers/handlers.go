@@ -147,9 +147,13 @@ func (m *Repository) AvailabilityJSON(w http.ResponseWriter, r *http.Request) {
 		jsonError(err, "Error parsing end date")
 		return
 	}
+	if endDate.Before(startDate) {
+		jsonError(err, "Error: the end date cannot be before the start date")
+		return
+	}
 	roomID, err := strconv.Atoi(r.Form.Get("room_id"))
 	if err != nil {
-		jsonError(err, "Error parsing start date")
+		jsonError(err, "Error parsing room id")
 		return
 	}
 	available, err := m.DB.SearchAvailabilityByDatesAndRoomID(startDate, endDate, roomID)

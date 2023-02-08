@@ -215,29 +215,82 @@ func TestRepository_PostReservation(t *testing.T) {
 }
 
 func TestRepository_AvaliabilityJSON(t *testing.T) {
-	// no available rooms
-	reqBody := "start=2060-01-01"
-	reqBody = fmt.Sprintf("%s&%s", reqBody, "end=2060-01-02")
-	reqBody = fmt.Sprintf("%s&%s", reqBody, "room_id=1")
-	req, _ := http.NewRequest("POST", "/search-availability-json", strings.NewReader(reqBody))
-	ctx := getCtx(req)
-	req = req.WithContext(ctx)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(Repo.AvailabilityJSON)
-	handler.ServeHTTP(rr, req)
+	tests := []struct {
+		name      string
+		params    map[string]string
+		available bool
+		message   string
+	}{
+		{"no-available-rooms", map[string]string{
+			"start":   "2060-01-01",
+			"end":     "2060-01-02",
+			"room_id": "1",
+		}, false, ""},
+		{"invalid-start-date", map[string]string{
+			"start":   "invalid",
+			"end":     "2060-01-02",
+			"room_id": "1",
+		}, false, "Error parsing start date"},
+		{"invalid-end-date", map[string]string{
+			"start":   "2060-01-01",
+			"end":     "invalid",
+			"room_id": "1",
+		}, false, "Error parsing end date"},
+		{"invalid-room-id", map[string]string{
+			"start":   "2060-01-01",
+			"end":     "2060-01-02",
+			"room_id": "invalid",
+		}, false, "Error parsing room id"},
+		{"wrong-date-interval", map[string]string{
+			"start":   "2060-01-02",
+			"end":     "2060-01-01",
+			"room_id": "2",
+		}, false, "Error: the end date cannot be before the start date"},
+		{"db-search-error", map[string]string{
+			"start":   "2060-01-01",
+			"end":     "2060-01-02",
+			"room_id": "3",
+		}, false, "Error searching availability"},
+		{"success", map[string]string{
+			"start":   "2060-02-01",
+			"end":     "2060-02-02",
+			"room_id": "1",
+		}, true, ""},
+	}
+	for _, e := range tests {
+		reqBody := composeUrlParams(e.params)
+		req, _ := http.NewRequest("POST", "/search-availability-json", strings.NewReader(reqBody))
+		ctx := getCtx(req)
+		req = req.WithContext(ctx)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(Repo.AvailabilityJSON)
+		handler.ServeHTTP(rr, req)
 
-	var j availabilityResponse
-	err := json.Unmarshal(rr.Body.Bytes(), &j)
-	if err != nil {
-		t.Error("error parsing json")
+		var j availabilityResponse
+		err := json.Unmarshal(rr.Body.Bytes(), &j)
+		if err != nil {
+			t.Error("error parsing json")
+		}
+		if j.Message != e.message {
+			t.Errorf("%s: wrong error message; expected %q but got %q", e.name, e.message, j.Message)
+		}
+		if j.OK != e.available {
+			t.Errorf("%s: error getting availability; expected %t but got %t", e.name, e.available, j.OK)
+		}
 	}
-	if j.Message != "" {
-		t.Errorf("not-available: got error when did not expected one: %q", j.Message)
+}
+
+func composeUrlParams(params map[string]string) string {
+	var result string
+	for k, v := range params {
+		if result == "" {
+			result = fmt.Sprintf("%s=%s", k, v)
+		} else {
+			result = fmt.Sprintf("%s&%s=%s", result, k, v)
+		}
 	}
-	if j.OK {
-		t.Errorf("not-available: got available room when does not expected")
-	}
+	return result
 }
 
 func getCtx(req *http.Request) context.Context {
