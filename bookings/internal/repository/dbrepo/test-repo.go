@@ -44,6 +44,12 @@ func (m *testDBRepo) SearchAvailabilityByDatesAndRoomID(start, end time.Time, ro
 // if any
 func (m *testDBRepo) SearchAvailabilityForAllRooms(start, end time.Time) ([]models.Room, error) {
 	var result []models.Room
+	if start == time.Date(2023, 01, 01, 0, 0, 0, 0, time.UTC) {
+		return result, errors.New("test DB error")
+	}
+	if start == time.Date(2060, 1, 5, 0, 0, 0, 0, time.UTC) {
+		result = append(result, models.Room{ID: 1, RoomName: "General's Quarters"})
+	}
 	return result, nil
 }
 

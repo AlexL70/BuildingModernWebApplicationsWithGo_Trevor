@@ -58,6 +58,53 @@ func TestGetHandlers(t *testing.T) {
 	}
 }
 
+func TestRepository_PostAvailability(t *testing.T) {
+	tests := []struct {
+		name           string
+		params         map[string]string
+		reservation    *models.Reservation
+		expectedStatus int
+		expectedError  string
+	}{
+		{"invalid-start-date", map[string]string{"start": "invalid", "end": "2060-01-10"},
+			nil, http.StatusTemporaryRedirect, "Error parsing start date"},
+		{"invalid-end-date", map[string]string{"start": "2060-01-01", "end": "invlid"},
+			nil, http.StatusTemporaryRedirect, "Error parsing end date"},
+		{"wrong-date-interval", map[string]string{"start": "2060-01-02", "end": "2060-01-01"},
+			nil, http.StatusTemporaryRedirect, "Error: the end date cannot be before the start date"},
+		{"db-error", map[string]string{"start": "2023-01-01", "end": "2023-01-02"}, nil,
+			http.StatusTemporaryRedirect, "Error searching availability in DB"},
+		{"no-available-rooms", map[string]string{"start": "2060-01-01", "end": "2060-01-02"}, nil,
+			http.StatusSeeOther, "No available rooms for this period. Sorry!"},
+		{"success", map[string]string{"start": "2060-01-05", "end": "2060-01-06"}, nil,
+			http.StatusOK, ""},
+	}
+
+	for _, e := range tests {
+		var reqBody string
+		var req *http.Request
+		if e.params != nil {
+			reqBody = composeUrlParams(e.params)
+			req, _ = http.NewRequest("POST", "/search-availability", strings.NewReader(reqBody))
+		} else {
+			req, _ = http.NewRequest("POST", "/search-availability", nil)
+		}
+		ctx := getCtx(req)
+		req = req.WithContext(ctx)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		handler := http.HandlerFunc(Repo.PostAvailability)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+		if rr.Code != e.expectedStatus {
+			t.Errorf("%s: bad status code. Expected %d, but got %d", e.name, e.expectedStatus, rr.Code)
+		}
+		errStr := session.PopString(req.Context(), "error")
+		if errStr != e.expectedError {
+			t.Errorf("%s: unexpected error message; expected %q but got %q", e.name, e.expectedError, errStr)
+		}
+	}
+}
+
 func TestRepository_Reservation(t *testing.T) {
 	reservation := models.Reservation{
 		RoomId: 1,
