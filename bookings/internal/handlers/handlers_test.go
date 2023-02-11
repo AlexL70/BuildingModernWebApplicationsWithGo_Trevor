@@ -7,11 +7,13 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/models"
+	"github.com/go-chi/chi/v5"
 )
 
 var theTests = []struct {
@@ -328,6 +330,52 @@ func TestRepository_ReservationSummary(t *testing.T) {
 	}
 }
 
+func TestRepository_ChooseRoom(t *testing.T) {
+	tests := []struct {
+		name            string
+		reservation     *models.Reservation
+		roomId          string
+		expectedStatus  int
+		expectedMessage string
+	}{
+		{name: "success", reservation: &models.Reservation{
+			StartDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+			EndDate:   time.Date(2023, 1, 10, 0, 0, 0, 0, time.UTC),
+		}, roomId: "1", expectedStatus: http.StatusSeeOther, expectedMessage: ""},
+		{name: "no-reservation", reservation: nil, roomId: "1", expectedStatus: http.StatusTemporaryRedirect,
+			expectedMessage: "Error getting reservation from the session"},
+		{name: "invalid-room-id", reservation: nil, roomId: "invalid", expectedStatus: http.StatusTemporaryRedirect,
+			expectedMessage: "Invalid room id"},
+	}
+
+	for _, e := range tests {
+		req, _ := http.NewRequest("GET", fmt.Sprintf("/choose-room/%s", e.roomId), nil)
+		ctx := getCtx(req)
+		ctx = addIdToChiContext(ctx, e.roomId)
+		req = req.WithContext(ctx)
+		if e.reservation != nil {
+			session.Put(ctx, "reservation", *e.reservation)
+		}
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(Repo.ChooseRoom)
+		handler.ServeHTTP(rr, req)
+
+		if e.expectedStatus != rr.Code {
+			t.Errorf("%s: wrong status code; expected %d but got %d", e.name, e.expectedStatus, rr.Code)
+		}
+		actualMessage := app.Session.PopString(ctx, "error")
+		if e.expectedMessage != actualMessage {
+			t.Errorf("%s: bad error message; expected %q but got %q", e.name, e.expectedMessage, actualMessage)
+		}
+		if e.reservation != nil {
+			reservation := app.Session.Get(ctx, "reservation").(models.Reservation)
+			if strconv.Itoa(reservation.RoomId) != e.roomId {
+				t.Errorf("%s: room id was not written to the reservation; expected %s but got %d", e.name, e.roomId, reservation.RoomId)
+			}
+		}
+	}
+}
+
 func composeUrlParams(params map[string]string) string {
 	var result string
 	for k, v := range params {
@@ -342,9 +390,15 @@ func composeUrlParams(params map[string]string) string {
 
 func getCtx(req *http.Request) context.Context {
 	sHeader := req.Header.Get("X-Session")
-	ctx, err := session.Load(req.Context(), sHeader)
+	ctx, err := app.Session.Load(req.Context(), sHeader)
 	if err != nil {
 		log.Println(err)
 	}
 	return ctx
+}
+
+func addIdToChiContext(parentCtx context.Context, id string) context.Context {
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("id", id)
+	return context.WithValue(parentCtx, chi.RouteCtxKey, chiCtx)
 }

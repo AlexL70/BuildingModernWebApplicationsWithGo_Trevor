@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -327,6 +328,7 @@ func (m *Repository) ChooseRoom(w http.ResponseWriter, r *http.Request) {
 
 	reservation, ok := m.App.Session.Get(r.Context(), "reservation").(models.Reservation)
 	if !ok {
+		log.Println("ChooseRoom: Cannot get reservation from the session")
 		m.App.Session.Put(r.Context(), "error", "Error getting reservation from the session")
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return
