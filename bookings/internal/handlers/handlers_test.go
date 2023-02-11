@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
@@ -376,16 +377,60 @@ func TestRepository_ChooseRoom(t *testing.T) {
 	}
 }
 
-func composeUrlParams(params map[string]string) string {
-	var result string
-	for k, v := range params {
-		if result == "" {
-			result = fmt.Sprintf("%s=%s", k, v)
-		} else {
-			result = fmt.Sprintf("%s&%s=%s", result, k, v)
+func TestRepository_BookRoom(t *testing.T) {
+	tests := []struct {
+		name            string
+		params          map[string]string
+		expectedStatus  int
+		expectedMessage string
+	}{
+		{name: "success", params: map[string]string{
+			"id": "1", "start": "2060-01-01", "end": "2060-01-10",
+		}, expectedStatus: http.StatusSeeOther, expectedMessage: ""},
+		{name: "invalid-room-id", params: map[string]string{
+			"id": "invalid", "start": "2060-01-01", "end": "2060-01-10",
+		}, expectedStatus: http.StatusTemporaryRedirect, expectedMessage: "Error parsing room id"},
+		{name: "invalid-start-date", params: map[string]string{
+			"id": "1", "start": "invalid", "end": "2060-01-10",
+		}, expectedStatus: http.StatusTemporaryRedirect, expectedMessage: "Error parsing start date"},
+		{name: "invalid-room-id", params: map[string]string{
+			"id": "1", "start": "2060-01-01", "end": "invalid",
+		}, expectedStatus: http.StatusTemporaryRedirect, expectedMessage: "Error parsing end date"},
+		{name: "room-does-not-exist", params: map[string]string{
+			"id": "3", "start": "2060-01-01", "end": "2060-01-10",
+		}, expectedStatus: http.StatusTemporaryRedirect, expectedMessage: "Error getting room from DB"},
+	}
+	for _, e := range tests {
+		params := composeUrlParams(e.params)
+		req, _ := http.NewRequest("GET", fmt.Sprintf("/book-room?%s", params), nil)
+		ctx := getCtx(req)
+		req = req.WithContext(ctx)
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(Repo.BookRoom)
+		handler.ServeHTTP(rr, req)
+		if e.expectedStatus != rr.Code {
+			t.Errorf("%s: wrong status code; expected %d but got %d", e.name, e.expectedStatus, rr.Code)
+		}
+		actualMessage := session.GetString(ctx, "error")
+		if e.expectedMessage != actualMessage {
+			t.Errorf("%s: bad error message; expected %q but gor %q", e.name, e.expectedMessage, actualMessage)
+		}
+		if e.expectedMessage == "" {
+			expectedRoomId, _ := strconv.Atoi(e.params["id"])
+			reservation := session.Get(ctx, "reservation").(models.Reservation)
+			if reservation.RoomId != expectedRoomId {
+				t.Errorf("%s: wrong room id in reservation; expected %d but got %d", e.name, expectedRoomId, reservation.RoomId)
+			}
 		}
 	}
-	return result
+}
+
+func composeUrlParams(params map[string]string) string {
+	postedData := url.Values{}
+	for k, v := range params {
+		postedData.Add(k, v)
+	}
+	return postedData.Encode()
 }
 
 func getCtx(req *http.Request) context.Context {
