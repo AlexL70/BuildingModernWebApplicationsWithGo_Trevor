@@ -55,7 +55,6 @@ func TestMain(m *testing.M) {
 		DB:  dbrepo.NewTestingRepo(&app),
 	}
 	NewHandlers(repo)
-	getRoutes()
 	os.Exit(m.Run())
 }
 
@@ -73,6 +72,8 @@ func getRoutes() http.Handler {
 	mux.Get("/search-availability", Repo.Availability)
 	mux.Post("/search-availability", Repo.PostAvailability)
 	mux.Post("/search-availability-json", Repo.AvailabilityJSON)
+	mux.Get("/choose-room/{id}", Repo.ChooseRoom)
+	mux.Get("/book-room", Repo.BookRoom)
 	mux.Get("/contact", Repo.Contact)
 	mux.Get("/make-reservation", Repo.Reservation)
 	mux.Post("/make-reservation", Repo.PostReservation)

@@ -25,21 +25,6 @@ var theTests = []struct {
 	{"ms", "/majors-suite", http.StatusOK},
 	{"sa", "/search-availability", http.StatusOK},
 	{"contact", "/contact", http.StatusOK},
-	//{"mkres", "/make-reservation", "GET", []postData{}, http.StatusOK},
-	//{"post-sa", "/search-availability", "POST", []postData{
-	//	{key: "start", value: "2024-01-01"},
-	//	{key: "end", value: "2024-01-05"},
-	//}, http.StatusOK},
-	//{"post-sa-json", "/search-availability-json", "POST", []postData{
-	//	{key: "start", value: "2024-01-01"},
-	//	{key: "end", value: "2024-01-05"},
-	//}, http.StatusOK},
-	//{"post-mr", "/make-reservation", "POST", []postData{
-	//	{key: "first_name", value: "John"},
-	//	{key: "last_name", value: "Smith"},
-	//	{key: "email", value: "john.smith@example.com"},
-	//	{key: "phone", value: "1111-222-333"},
-	//}, http.StatusOK},
 }
 
 func TestGetHandlers(t *testing.T) {
@@ -106,45 +91,45 @@ func TestRepository_PostAvailability(t *testing.T) {
 }
 
 func TestRepository_Reservation(t *testing.T) {
-	reservation := models.Reservation{
-		RoomId: 1,
-		Room: models.Room{
-			ID:       1,
-			RoomName: "General's Quoters",
-		},
+	tests := []struct {
+		name           string
+		reservation    *models.Reservation
+		expectedStatus int
+	}{
+		{name: "success", reservation: &models.Reservation{
+			RoomId:    1,
+			StartDate: time.Date(2060, 1, 1, 0, 0, 0, 0, time.UTC),
+			EndDate:   time.Date(2060, 1, 10, 0, 0, 0, 0, time.UTC),
+			Room: models.Room{
+				ID:       1,
+				RoomName: "General's Quarters",
+			},
+		}, expectedStatus: http.StatusOK},
+		{name: "no-reservation", reservation: nil,
+			expectedStatus: http.StatusTemporaryRedirect},
+		{name: "no-room", reservation: &models.Reservation{
+			RoomId: 3,
+			Room: models.Room{
+				ID:       3,
+				RoomName: "Non-existent room",
+			},
+		}, expectedStatus: http.StatusTemporaryRedirect},
 	}
 
-	req, _ := http.NewRequest("GET", "/make-reservation", nil)
-	ctx := getCtx(req)
-	req = req.WithContext(ctx)
+	for _, e := range tests {
+		req, _ := http.NewRequest("GET", "/make-reservation", nil)
+		ctx := getCtx(req)
+		req = req.WithContext(ctx)
 
-	rr := httptest.NewRecorder()
-	session.Put(ctx, "reservation", reservation)
-	handler := http.HandlerFunc(Repo.Reservation)
-	handler.ServeHTTP(rr, req)
-	if rr.Code != http.StatusOK {
-		t.Errorf("%s: bad status code. Expected %d, but got %d", "mkres", http.StatusOK, rr.Code)
-	}
-
-	// test situation when there is no reservation stored in session
-	req, _ = http.NewRequest("GET", "/make-reservation", nil)
-	ctx = getCtx(req)
-	req = req.WithContext(ctx)
-	rr = httptest.NewRecorder()
-	handler.ServeHTTP(rr, req)
-	if rr.Code != http.StatusTemporaryRedirect {
-		t.Errorf("%s: bad status code. Expected %d, but got %d", "mkres", http.StatusTemporaryRedirect, rr.Code)
-	}
-	// test situation when room does not exist in DB
-	req, _ = http.NewRequest("GET", "/make-reservation", nil)
-	ctx = getCtx(req)
-	req = req.WithContext(ctx)
-	rr = httptest.NewRecorder()
-	reservation.RoomId = 3
-	session.Put(ctx, "reservation", reservation)
-	handler.ServeHTTP(rr, req)
-	if rr.Code != http.StatusTemporaryRedirect {
-		t.Errorf("%s: bad status code. Expected %d, but got %d", "mkres", http.StatusTemporaryRedirect, rr.Code)
+		rr := httptest.NewRecorder()
+		if e.reservation != nil {
+			session.Put(ctx, "reservation", *e.reservation)
+		}
+		handler := http.HandlerFunc(Repo.Reservation)
+		handler.ServeHTTP(rr, req)
+		if rr.Code != e.expectedStatus {
+			t.Errorf("%s: bad status code. Expected %d, but got %d", "success", e.expectedStatus, rr.Code)
+		}
 	}
 }
 
@@ -294,6 +279,51 @@ func TestRepository_AvaliabilityJSON(t *testing.T) {
 		}
 		if j.OK != e.available {
 			t.Errorf("%s: error getting availability; expected %t but got %t", e.name, e.available, j.OK)
+		}
+	}
+}
+
+func TestRepository_ReservationSummary(t *testing.T) {
+	tests := []struct {
+		name            string
+		reservation     *models.Reservation
+		expectedStatus  int
+		expectedMessage string
+	}{
+		{name: "success", reservation: &models.Reservation{
+			FirstName: "John",
+			LastName:  "Smith",
+			Email:     "john.smith@email.com",
+			Phone:     "5555-111-222",
+			StartDate: time.Date(2060, 1, 1, 0, 0, 0, 0, time.UTC),
+			EndDate:   time.Date(2060, 1, 10, 0, 0, 0, 0, time.UTC),
+			RoomId:    1,
+			Room: models.Room{
+				ID:       1,
+				RoomName: "General's Quaters",
+			},
+		}, expectedStatus: http.StatusOK,
+		},
+		{name: "no-reservation", reservation: nil, expectedStatus: http.StatusTemporaryRedirect,
+			expectedMessage: "Cannot get reservation from the session"},
+	}
+
+	for _, e := range tests {
+		req, _ := http.NewRequest("GET", "/reservation-summary", nil)
+		ctx := getCtx(req)
+		req = req.WithContext(ctx)
+		if e.reservation != nil {
+			session.Put(ctx, "reservation", *e.reservation)
+		}
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(Repo.ReservationSummary)
+		handler.ServeHTTP(rr, req)
+		if e.expectedStatus != rr.Code {
+			t.Errorf("%s: wrong status code; expected %d but got %d", e.name, e.expectedStatus, rr.Code)
+		}
+		actualMessage := session.PopString(req.Context(), "error")
+		if e.expectedMessage != actualMessage {
+			t.Errorf("%s: bad error message; expected %q but got %q", e.name, e.expectedMessage, actualMessage)
 		}
 	}
 }
