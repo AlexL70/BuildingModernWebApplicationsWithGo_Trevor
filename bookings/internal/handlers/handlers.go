@@ -303,6 +303,29 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 	}
 	m.App.MailChan <- msg
 
+	// Send email notifictaion to hotel's owner
+	htmlMessage = fmt.Sprintf(`
+		<strong>Reservation Confirmation</strong>
+		<br><br>	
+		This is to inform your that reservation was made from %s to %s of %s room by %s %s.
+		<br><br>
+		<strong>Contact Information</strong><br>
+		Email: %s<br>
+		Phone#: %s
+		<br><br>
+		Please do the necessary preparations,<br>
+		admin@room&breakfast.com
+	`, reservation.StartDate.Format("2006-01-02"), reservation.EndDate.Format("2006-01-02"),
+		reservation.Room.RoomName, reservation.FirstName, reservation.LastName,
+		reservation.Email, reservation.Phone)
+	msg = models.MailData{
+		To:      "admin@room&breakfast.com",
+		From:    "admin@room&breakfast.com",
+		Subject: "Room reservation has been made",
+		Content: htmlMessage,
+	}
+	m.App.MailChan <- msg
+
 	m.App.Session.Put(r.Context(), "reservation", reservation)
 	http.Redirect(w, r, "/reservation-summary", http.StatusSeeOther)
 }
