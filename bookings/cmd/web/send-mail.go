@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
+	"io/ioutil"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/models"
@@ -32,7 +35,16 @@ func sendMessage(m models.MailData) {
 
 	email := mail.NewMSG()
 	email.SetFrom(m.From).AddTo(m.To).SetSubject(m.Subject)
-	email.SetBody(mail.TextHTML, m.Content)
+	if m.Template == "" {
+		email.SetBody(mail.TextHTML, m.Content)
+	} else {
+		data, err := ioutil.ReadFile(fmt.Sprintf("./email-templates/%s", m.Template))
+		if err != nil {
+			app.ErrorLog.Fatalf("Error reading template from disk: %s", err)
+		}
+		mailTemplate := string(data)
+		email.SetBody(mail.TextHTML, strings.Replace(mailTemplate, "[%body%]", m.Content, 1))
+	}
 	err = email.Send(client)
 	if err != nil {
 		log.Println(err)
