@@ -442,8 +442,11 @@ func (m *Repository) PostShowLogin(w http.ResponseWriter, r *http.Request) {
 	form := forms.New(r.PostForm)
 	form.Required("email", "password")
 	form.IsEmail("email")
-	if form.Valid() {
-		// TODO return back to login page
+	if !form.Valid() {
+		render.Template(w, r, "login.page.gohtml", &models.TemplateData{
+			Form: form,
+		})
+		return
 	}
 
 	email := form.Get("email")
@@ -452,7 +455,7 @@ func (m *Repository) PostShowLogin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 		m.App.Session.Put(r.Context(), "error", "Invalid login!")
-		http.Redirect(w, r, "/user-login", http.StatusSeeOther)
+		http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 		return
 	}
 
