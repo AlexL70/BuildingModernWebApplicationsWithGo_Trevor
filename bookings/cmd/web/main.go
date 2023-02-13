@@ -34,15 +34,6 @@ func main() {
 	log.Println("Starting mail listener...")
 	listenForMail()
 
-	// temporary code sending email message; to be deleted
-	//msg := models.MailData{
-	//	To:      "john@dow.ca",
-	//	From:    "me@here.com",
-	//	Subject: "Hi John!",
-	//	Content: "Hello, <strong>world</strong>!",
-	//}
-	//app.MailChan <- msg
-
 	//	Start server
 	fmt.Printf("Starting Web Server on port %s\n", portNumber)
 	srv := &http.Server{
