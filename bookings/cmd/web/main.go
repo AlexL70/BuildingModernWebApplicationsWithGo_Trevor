@@ -30,6 +30,18 @@ func main() {
 		log.Fatalf("Error setting up application: %q", err)
 	}
 	defer db.SQL.Close()
+	defer close(app.MailChan)
+	log.Println("Starting mail listener...")
+	listenForMail()
+
+	// temporary code sending email message; to be deleted
+	//msg := models.MailData{
+	//	To:      "john@dow.ca",
+	//	From:    "me@here.com",
+	//	Subject: "Hi John!",
+	//	Content: "Hello, <strong>world</strong>!",
+	//}
+	//app.MailChan <- msg
 
 	//	Start server
 	fmt.Printf("Starting Web Server on port %s\n", portNumber)
@@ -58,6 +70,9 @@ func run() (*driver.DB, error) {
 	gob.Register(models.User{})
 	gob.Register(models.Room{})
 	gob.Register(models.Restriction{})
+	// Create mail channel
+	mailChan := make(chan models.MailData)
+	app.MailChan = mailChan
 	// Creating a session instance
 	session := scs.New()
 	session.Lifetime = 24 * time.Hour
