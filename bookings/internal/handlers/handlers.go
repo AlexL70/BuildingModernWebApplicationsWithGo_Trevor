@@ -480,7 +480,18 @@ func (m *Repository) AdminNewReservations(w http.ResponseWriter, r *http.Request
 }
 
 func (m *Repository) AdminAllReservations(w http.ResponseWriter, r *http.Request) {
-	render.Template(w, r, "admin-all-reservations.page.gohtml", &models.TemplateData{})
+	reservations, err := m.DB.AllReservations()
+	if err != nil {
+		log.Println(err)
+		m.App.Session.Put(r.Context(), "error", "Error getting reservations from DB")
+		http.Redirect(w, r, "/admin/dashboard", http.StatusTemporaryRedirect)
+		return
+	}
+	data := map[string]any{}
+	data["reservations"] = reservations
+	render.Template(w, r, "admin-all-reservations.page.gohtml", &models.TemplateData{
+		Data: data,
+	})
 }
 
 func (m *Repository) AdminReservationsCalendar(w http.ResponseWriter, r *http.Request) {
