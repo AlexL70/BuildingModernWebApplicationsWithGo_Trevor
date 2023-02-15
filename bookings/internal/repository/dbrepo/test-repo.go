@@ -62,30 +62,51 @@ func (m *testDBRepo) GetRoomByID(id int) (models.Room, error) {
 	return room, nil
 }
 
+// GetUserById returns a user by id
 func (m *testDBRepo) GetUserById(id int) (models.User, error) {
 	var u models.User
 	return u, nil
 }
 
+// UpdateUser updates a user in the database
 func (m *testDBRepo) UpdateUser(u models.User) error {
 	return nil
 }
 
+// Authenticate authenticates the user
 func (m *testDBRepo) Authenticate(email, testPassword string) (int, string, error) {
 	return 1, "", nil
 }
 
+// AllReservations returns a slice of all reservations
 func (m *testDBRepo) AllReservations() ([]models.Reservation, error) {
 	var reservations []models.Reservation
 	return reservations, nil
 }
 
+// NewReservations returns a slice of new reservations
 func (m *testDBRepo) NewReservations() ([]models.Reservation, error) {
 	var reservations []models.Reservation
 	return reservations, nil
 }
 
+// GetReservationByID gets reservation from the DB by ID
 func (m *testDBRepo) GetReservationByID(id int) (models.Reservation, error) {
 	var reservation models.Reservation
 	return reservation, nil
+}
+
+// UpdateReservation updates reservation in the database
+func (m *testDBRepo) UpdateReservation(u models.Reservation) error {
+	return nil
+}
+
+// DeleteReservation deletes one reservation from the DB by id
+func (m *testDBRepo) DeleteReservation(id int) error {
+	return nil
+}
+
+// UpdateProcessedForReservation updates the processed field (status) of reservation by ID
+func (m *testDBRepo) UpdateProcessedForReservation(id, processed int) error {
+	return nil
 }
