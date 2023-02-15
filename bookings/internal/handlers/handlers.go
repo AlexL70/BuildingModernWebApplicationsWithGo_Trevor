@@ -508,6 +508,36 @@ func (m *Repository) AdminAllReservations(w http.ResponseWriter, r *http.Request
 	})
 }
 
+// AdminShowReservation shows one reservation in admin tool
+func (m *Repository) AdminShowReservation(w http.ResponseWriter, r *http.Request) {
+	src := chi.URLParam(r, "src")
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		m.App.Session.Put(r.Context(), "error", "Invalid reservation id")
+		http.Redirect(w, r, "/admin/dashboard", http.StatusTemporaryRedirect)
+		return
+	}
+
+	reservation, err := m.DB.GetReservationByID(id)
+	if err != nil {
+		log.Println(err)
+		m.App.Session.Put(r.Context(), "error", "Error getting reservation from DB")
+		http.Redirect(w, r, "/admin/dashboard", http.StatusTemporaryRedirect)
+		return
+	}
+
+	data := map[string]any{}
+	data["reservation"] = reservation
+	stringMap := map[string]string{}
+	stringMap["src"] = src
+
+	render.Template(w, r, "admin-reservation-show.page.gohtml", &models.TemplateData{
+		Data:      data,
+		StringMap: stringMap,
+		Form:      forms.New(nil),
+	})
+}
+
 // AdminReservationsCalendar shows the reservations' calendar in admin tool
 func (m *Repository) AdminReservationsCalendar(w http.ResponseWriter, r *http.Request) {
 	render.Template(w, r, "admin-reservations-calendar.page.gohtml", &models.TemplateData{})

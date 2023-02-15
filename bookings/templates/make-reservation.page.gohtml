@@ -11,7 +11,7 @@
             <li>Arrival: {{index .StringMap "start_date"}}</li>
             <li>Departure: {{index .StringMap "end_date"}}</li>
           </ul>
-          <form method="post" action="" {{/* class="needs-validation" */}} novalidate>
+          <form method="post" action="" class="needs-validation" novalidate>
             <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
             <input type="hidden" name="start_date" id="start_date" value="{{index .StringMap "start_date"}}">
             <input type="hidden" name="end_date" id="end_date" value="{{index .StringMap "end_date"}}">
