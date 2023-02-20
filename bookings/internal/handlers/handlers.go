@@ -538,6 +538,50 @@ func (m *Repository) AdminShowReservation(w http.ResponseWriter, r *http.Request
 	})
 }
 
+// AdminPostShowReservation saves changes in reservation to the database
+func (m *Repository) AdminPostShowReservation(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println(err)
+		m.App.Session.Put(r.Context(), "error", "Error parsing form")
+		http.Redirect(w, r, "/admin/dashboard", http.StatusTemporaryRedirect)
+		return
+	}
+
+	src := chi.URLParam(r, "src")
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Println(err)
+		m.App.Session.Put(r.Context(), "error", "Invalid reservation id")
+		http.Redirect(w, r, "/admin/dashboard", http.StatusTemporaryRedirect)
+		return
+	}
+
+	res, err := m.DB.GetReservationByID(id)
+	if err != nil {
+		log.Println(err)
+		m.App.Session.Put(r.Context(), "error", "Error getting reservation from DB")
+		http.Redirect(w, r, "/admin/dashboard", http.StatusTemporaryRedirect)
+		return
+	}
+
+	res.FirstName = r.Form.Get("first_name")
+	res.LastName = r.Form.Get("last_name")
+	res.Email = r.Form.Get("email")
+	res.Phone = r.Form.Get("phone")
+
+	err = m.DB.UpdateReservation(res)
+	if err != nil {
+		log.Println(err)
+		m.App.Session.Put(r.Context(), "error", "Error getting reservation from DB")
+		http.Redirect(w, r, "/admin/dashboard", http.StatusTemporaryRedirect)
+		return
+	}
+
+	m.App.Session.Put(r.Context(), "flash", "Changes successfully saved")
+	http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
+}
+
 // AdminReservationsCalendar shows the reservations' calendar in admin tool
 func (m *Repository) AdminReservationsCalendar(w http.ResponseWriter, r *http.Request) {
 	render.Template(w, r, "admin-reservations-calendar.page.gohtml", &models.TemplateData{})

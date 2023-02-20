@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="/static/admin/vendors/ti-icons/css/themify-icons.css">
   <link rel="stylesheet" href="/static/admin/vendors/base/vendor.bundle.base.css">
   <!-- endinject -->
+  <link rel="stylesheet" type="text/css" href="https://unpkg.com/notie/dist/notie.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.0/dist/sweetalert2.min.css" rel="stylesheet">
   <!-- plugin css for this page -->
   <!-- End plugin css for this page -->
   <!-- inject:css -->
@@ -132,11 +134,26 @@
   <script src="/static/admin/js/todolist.js"></script>
   <!-- endinject -->
   <!-- Custom js for this page-->
+  <script src="https://unpkg.com/notie"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.0/dist/sweetalert2.all.min.js"></script>
   <script src="/static/admin/js/dashboard.js"></script>
+  <script src="/static/js/app.js"></script>
   <!-- End custom js for this page-->
   {{block "js" .}}
 
   {{end}}
+  <script>
+    {{with .Error}}
+    notify("{{.}}", "error")
+    {{end}}
+    {{with .Warning}}
+    notify("{{.}}", "warning")
+    {{end}}
+    {{with .Flash}}
+    notify("{{.}}", "success")
+    {{end}}
+  </script>
+
 </body>
 
 </html>

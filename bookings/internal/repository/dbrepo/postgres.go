@@ -312,10 +312,10 @@ func (m *postgresDBRepo) UpdateReservation(r models.Reservation) error {
 
 	query := `
 		update  reservations
-		   set  first_name = $1
-		   		last_name = $2
-				email = $3
-				phone = $4
+		   set  first_name = $1,
+		   		last_name = $2,
+				email = $3,
+				phone = $4,
 				updated_at = $5
 		 where  id = $6
 	`
@@ -337,8 +337,7 @@ func (m *postgresDBRepo) DeleteReservation(id int) error {
 	return err
 }
 
-// UpdateProcessedForReservation updates the processed field (status) of
-// reservation
+// UpdateProcessedForReservation updates the processed field (status) of reservation by ID
 func (m *postgresDBRepo) UpdateProcessedForReservation(id, processed int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
