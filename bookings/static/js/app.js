@@ -117,11 +117,6 @@ function Prompt() {
           c.didOpen();
         }
       },
-      preConfirm: () => {
-        if (c.preConfirm !== undefined) {
-          return c.preConfirm();
-        }
-      },
     })
 
     if (result && result.isConfirmed && !result.isDismissed && result.value) {

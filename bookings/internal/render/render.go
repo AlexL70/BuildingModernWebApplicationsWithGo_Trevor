@@ -63,11 +63,7 @@ func Template(w http.ResponseWriter, r *http.Request, tmpl string, td *models.Te
 		return err
 	}
 	buf := new(bytes.Buffer)
-	fmt.Println("Adding default data...")
 	td = AddDefaultData(td, r)
-	fmt.Println("Error:", td.Error)
-	fmt.Println("Warning:", td.Warning)
-	fmt.Println("Flash:", td.Flash)
 	err := t.Execute(buf, td)
 	if err != nil {
 		err := fmt.Errorf("error executing template: %w", err)
