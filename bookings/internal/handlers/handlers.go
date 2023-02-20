@@ -608,3 +608,25 @@ func (m *Repository) AdminProcessReservation(w http.ResponseWriter, r *http.Requ
 	m.App.Session.Put(r.Context(), "flash", "Successfully marked as processed")
 	http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
 }
+
+// AdminDeleteReservation deletes reservation from the database
+func (m *Repository) AdminDeleteReservation(w http.ResponseWriter, r *http.Request) {
+	src := chi.URLParam(r, "src")
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		log.Println(err)
+		m.App.Session.Put(r.Context(), "error", "Invalid reservation id")
+		http.Redirect(w, r, "/admin/dashboard", http.StatusTemporaryRedirect)
+		return
+	}
+
+	err = m.DB.DeleteReservation(id)
+	if err != nil {
+		log.Println(err)
+		m.App.Session.Put(r.Context(), "error", "Error deleting reservation")
+		http.Redirect(w, r, "/admin/dashboard", http.StatusTemporaryRedirect)
+		return
+	}
+	m.App.Session.Put(r.Context(), "flash", "Successfully deleted reservation")
+	http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
+}
