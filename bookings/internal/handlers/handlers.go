@@ -584,7 +584,32 @@ func (m *Repository) AdminPostShowReservation(w http.ResponseWriter, r *http.Req
 
 // AdminReservationsCalendar shows the reservations' calendar in admin tool
 func (m *Repository) AdminReservationsCalendar(w http.ResponseWriter, r *http.Request) {
-	render.Template(w, r, "admin-reservations-calendar.page.gohtml", &models.TemplateData{})
+	// assume there is not month or year specified
+	now := time.Now()
+	if r.URL.Query().Get("y") != "" {
+		year, _ := strconv.Atoi(r.URL.Query().Get("y"))
+		month, _ := strconv.Atoi(r.URL.Query().Get("m"))
+		now = time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	}
+
+	next := now.AddDate(0, 1, 0)
+	last := now.AddDate(0, -1, 0)
+	nextMonth := next.Format("01")
+	nextMonthYear := next.Format("2006")
+	lastMonth := last.Format("01")
+	lastMonthYear := last.Format("2006")
+
+	stringMap := map[string]string{
+		"next_month":      nextMonth,
+		"next_month_year": nextMonthYear,
+		"last_month":      lastMonth,
+		"last_month_year": lastMonthYear,
+		"this_month":      now.Format("01"),
+		"this_month_year": now.Format("2006"),
+	}
+	render.Template(w, r, "admin-reservations-calendar.page.gohtml", &models.TemplateData{
+		StringMap: stringMap,
+	})
 }
 
 // AdminProcessReservation marks reservation as processed in database
