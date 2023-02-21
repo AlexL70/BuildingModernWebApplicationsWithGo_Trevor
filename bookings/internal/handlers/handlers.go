@@ -592,6 +592,10 @@ func (m *Repository) AdminReservationsCalendar(w http.ResponseWriter, r *http.Re
 		now = time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
 	}
 
+	data := map[string]any{
+		"now": now,
+	}
+
 	next := now.AddDate(0, 1, 0)
 	last := now.AddDate(0, -1, 0)
 	nextMonth := next.Format("01")
@@ -607,8 +611,29 @@ func (m *Repository) AdminReservationsCalendar(w http.ResponseWriter, r *http.Re
 		"this_month":      now.Format("01"),
 		"this_month_year": now.Format("2006"),
 	}
+
+	// Count a number of days in the current month
+	currYear, currMonth, _ := now.Date()
+	currLocation := now.Location()
+	firstOfMonth := time.Date(currYear, currMonth, 1, 0, 0, 0, 0, currLocation)
+	lastOfMonth := firstOfMonth.AddDate(0, 1, -1)
+	intMap := map[string]int{
+		"days_in_month": lastOfMonth.Day(),
+	}
+
+	rooms, err := m.DB.AllRooms()
+	if err != nil {
+		log.Println(err)
+		m.App.Session.Put(r.Context(), "error", "Error fetching rooms from DB")
+		http.Redirect(w, r, "/admin/dashboard", http.StatusTemporaryRedirect)
+		return
+	}
+	data["rooms"] = rooms
+
 	render.Template(w, r, "admin-reservations-calendar.page.gohtml", &models.TemplateData{
+		Data:      data,
 		StringMap: stringMap,
+		IntMap:    intMap,
 	})
 }
 
