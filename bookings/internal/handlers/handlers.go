@@ -585,6 +585,7 @@ func (m *Repository) AdminPostShowReservation(w http.ResponseWriter, r *http.Req
 // AdminReservationsCalendar shows the reservations' calendar in admin tool
 func (m *Repository) AdminReservationsCalendar(w http.ResponseWriter, r *http.Request) {
 	// assume there is not month or year specified
+	time.LoadLocation("UTC")
 	now := time.Now()
 	if r.URL.Query().Get("y") != "" {
 		year, _ := strconv.Atoi(r.URL.Query().Get("y"))
@@ -650,7 +651,7 @@ func (m *Repository) AdminReservationsCalendar(w http.ResponseWriter, r *http.Re
 			for rd := rr.StartDate; !rd.After(rr.EndDate); rd = rd.AddDate(0, 0, 1) {
 				dateStr := rd.Format("2006-01-02")
 				if rr.ReservationID == 0 {
-					blockMap[dateStr] = rr.RestrictionID
+					blockMap[dateStr] = rr.ID
 				} else {
 					reservationMap[dateStr] = rr.ReservationID
 				}
