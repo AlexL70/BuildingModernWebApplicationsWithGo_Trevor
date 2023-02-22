@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/config"
@@ -635,7 +636,7 @@ func (m *Repository) AdminReservationsCalendar(w http.ResponseWriter, r *http.Re
 		reservationMap := map[string]int{}
 		blockMap := map[string]int{}
 		for d := firstOfMonth; !d.After(lastOfMonth); d = d.AddDate(0, 0, 1) {
-			dateStr := d.Format("2006-01-02")
+			dateStr := d.Format("2006-01-2")
 			reservationMap[dateStr] = 0
 			blockMap[dateStr] = 0
 		}
@@ -649,7 +650,7 @@ func (m *Repository) AdminReservationsCalendar(w http.ResponseWriter, r *http.Re
 
 		for _, rr := range roomRestrictions {
 			for rd := rr.StartDate; !rd.After(rr.EndDate); rd = rd.AddDate(0, 0, 1) {
-				dateStr := rd.Format("2006-01-02")
+				dateStr := rd.Format("2006-01-2")
 				if rr.ReservationID == 0 {
 					blockMap[dateStr] = rr.ID
 				} else {
@@ -726,6 +727,48 @@ func (m *Repository) AdminPostReservationsCalendar(w http.ResponseWriter, r *htt
 
 	year, _ := strconv.Atoi(r.Form.Get("y"))
 	month, _ := strconv.Atoi(r.Form.Get("m"))
+
+	rooms, err := m.DB.AllRooms()
+	if err != nil {
+		log.Print(err)
+		m.App.Session.Put(r.Context(), "error", "Error getting rooms from DB")
+		http.Redirect(w, r, "/admin/dashboard", http.StatusTemporaryRedirect)
+		return
+	}
+
+	form := forms.New(r.PostForm)
+	for _, room := range rooms {
+		// get the block map from the session (state previous to form posting)
+		oldMap := m.App.Session.Get(r.Context(), fmt.Sprintf("block_map_%d", room.ID)).(map[string]int)
+		// loop though map, compare with posted data and remove unchecked blocks from DB
+		for name, value := range oldMap {
+			if value > 0 && !form.Has(fmt.Sprintf("remove_block_%d_%s", room.ID, name)) {
+				// remove appropriate restriction from DB
+				err := m.DB.DeleteBlockByID(value)
+				if err != nil {
+					log.Println(err)
+					m.App.Session.Put(r.Context(), "error", "Error removing room restriction from DB")
+					http.Redirect(w, r, "/admin/dashboard", http.StatusTemporaryRedirect)
+				}
+			}
+		}
+	}
+
+	// loop through the posted form, compare with map and add checked blocks
+	for name, _ := range r.PostForm {
+		if strings.HasPrefix(name, "add_block") {
+			splitted := strings.Split(name, "_")
+			roomID, _ := strconv.Atoi(splitted[2])
+			startDate, _ := time.Parse("2006-01-2", splitted[3])
+			err := m.DB.InsertBlockForRoom(roomID, startDate)
+			if err != nil {
+				log.Println(err)
+				m.App.Session.Put(r.Context(), "error", "Error adding room restriction to DB")
+				http.Redirect(w, r, "/admin/dashboard", http.StatusTemporaryRedirect)
+				return
+			}
+		}
+	}
 
 	m.App.Session.Put(r.Context(), "flash", "Changes saved!")
 	http.Redirect(w, r, fmt.Sprintf("/admin/reservations-calendar?y=%d&m=%d", year, month), http.StatusSeeOther)
