@@ -5,6 +5,8 @@ Reservation
 {{define "content"}}
     {{$res := index .Data "reservation"}}
     {{$src := index .StringMap "src"}}
+    {{$year := index .StringMap "year"}}
+    {{$month := index .StringMap "month"}}
     <div class="col-md-12">
         <p>
         <strong>Arrival</strong>: {{humanDate $res.StartDate}}<br>
@@ -15,6 +17,8 @@ Reservation
         <form method="post" action="/admin/reservations/{{$src}}/{{$res.ID}}" class="needs-validation" novalidate>
           <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
           <input type="hidden" name="id" id="id" value={{$res.ID}}>
+          <input type="hidden" name="month" value="{{$month}}">
+          <input type="hidden" name="year" value="{{$year}}">
 
           <div class="form-group mt-5">
             <label for="first_name">First name:</label>
@@ -56,10 +60,12 @@ Reservation
             href="/admin/reservations-{{$src}}"
             {{end}} 
             class="btn btn-warning">Cancel</a>
-            <a href="#!" class="btn btn-info" onclick="processRes({{$res.ID}} , {{$src}})">Mark as processed</a>
+            {{if eq $res.Processed 0}}
+            <a href="#!" class="btn btn-info" onclick="processRes({{$res.ID}} , {{$src}}, {{$year}}, {{$month}})">Mark as processed</a>
+            {{end}}
           </div>
           <div class="float-end">
-            <a href="#!" class="btn btn-danger" onclick="deleteRes({{$res.ID}} , {{$src}})">Delete</a>
+            <a href="#!" class="btn btn-danger" onclick="deleteRes({{$res.ID}} , {{$src}}, {{$year}}, {{$month}})">Delete</a>
           </div>
         </form>
     </div>
@@ -67,24 +73,24 @@ Reservation
 
 {{define "js"}}
 <script>
-function processRes(id, src) {
+function processRes(id, src, year, month) {
   attention.custom({
     icon: "warning",
     msg: "Are you sure you want to mark it as processed?",
     callback: function(result) {
       if (result !== false) {
-        window.location.href = `/admin/process-reservation/${src}/${id}`
+        window.location.href = `/admin/process-reservation/${src}/${id}?y=${year}&m=${month}`
       }
     }
   })
 }
-function deleteRes(id, src) {
+function deleteRes(id, src, year, month) {
   attention.custom({
     icon: "warning",
     msg: "Are you sure you want to delete reservation?",
     callback: function(result) {
       if (result !== false) {
-        window.location.href = `/admin/delete-reservation/${src}/${id}`
+        window.location.href = `/admin/delete-reservation/${src}/${id}?y=${year}&m=${month}`
       }
     }
   })

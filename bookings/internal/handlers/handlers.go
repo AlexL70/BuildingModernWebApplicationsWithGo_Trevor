@@ -519,6 +519,13 @@ func (m *Repository) AdminShowReservation(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	var year string
+	var month string
+	if src == "cal" { // year and month are actual only for calendar
+		year = r.URL.Query().Get("y")
+		month = r.URL.Query().Get("m")
+	}
+
 	reservation, err := m.DB.GetReservationByID(id)
 	if err != nil {
 		log.Println(err)
@@ -531,6 +538,10 @@ func (m *Repository) AdminShowReservation(w http.ResponseWriter, r *http.Request
 	data["reservation"] = reservation
 	stringMap := map[string]string{}
 	stringMap["src"] = src
+	if year != "" {
+		stringMap["year"] = year
+		stringMap["month"] = month
+	}
 
 	render.Template(w, r, "admin-reservation-show.page.gohtml", &models.TemplateData{
 		Data:      data,
@@ -571,16 +582,28 @@ func (m *Repository) AdminPostShowReservation(w http.ResponseWriter, r *http.Req
 	res.Email = r.Form.Get("email")
 	res.Phone = r.Form.Get("phone")
 
+	year := r.Form.Get("year")
+	month := r.Form.Get("month")
+
 	err = m.DB.UpdateReservation(res)
 	if err != nil {
 		log.Println(err)
-		m.App.Session.Put(r.Context(), "error", "Error getting reservation from DB")
+		m.App.Session.Put(r.Context(), "error", "Error updating reservation in DB")
 		http.Redirect(w, r, "/admin/dashboard", http.StatusTemporaryRedirect)
 		return
 	}
 
 	m.App.Session.Put(r.Context(), "flash", "Changes successfully saved")
-	http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
+	if src == "cal" {
+		url := "/admin/reservations-calendar"
+		if year != "" {
+			url = fmt.Sprintf("%s?y=%s&m=%s", url, year, month)
+		}
+		http.Redirect(w, r, url, http.StatusSeeOther)
+
+	} else {
+		http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
+	}
 }
 
 // AdminReservationsCalendar shows the reservations' calendar in admin tool
@@ -682,6 +705,9 @@ func (m *Repository) AdminProcessReservation(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	year := r.URL.Query().Get("y")
+	month := r.URL.Query().Get("m")
+
 	err = m.DB.UpdateProcessedForReservation(id, 1)
 	if err != nil {
 		log.Println(err)
@@ -690,7 +716,16 @@ func (m *Repository) AdminProcessReservation(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	m.App.Session.Put(r.Context(), "flash", "Successfully marked as processed")
-	http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
+	if src == "cal" {
+		url := "/admin/reservations-calendar"
+		if year != "" {
+			url = fmt.Sprintf("%s?y=%s&m=%s", url, year, month)
+		}
+		http.Redirect(w, r, url, http.StatusSeeOther)
+
+	} else {
+		http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
+	}
 }
 
 // AdminDeleteReservation deletes reservation from the database
@@ -711,8 +746,21 @@ func (m *Repository) AdminDeleteReservation(w http.ResponseWriter, r *http.Reque
 		http.Redirect(w, r, "/admin/dashboard", http.StatusTemporaryRedirect)
 		return
 	}
+
+	year := r.URL.Query().Get("y")
+	month := r.URL.Query().Get("m")
+
 	m.App.Session.Put(r.Context(), "flash", "Successfully deleted reservation")
-	http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
+	if src == "cal" {
+		url := "/admin/reservations-calendar"
+		if year != "" {
+			url = fmt.Sprintf("%s?y=%s&m=%s", url, year, month)
+		}
+		http.Redirect(w, r, url, http.StatusSeeOther)
+
+	} else {
+		http.Redirect(w, r, fmt.Sprintf("/admin/reservations-%s", src), http.StatusSeeOther)
+	}
 }
 
 // AdminPostReservationsCalendar handles post of reservation calendar
