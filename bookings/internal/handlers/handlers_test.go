@@ -18,16 +18,29 @@ import (
 )
 
 var theTests = []struct {
-	name               string
-	url                string
-	expectedStatusCode int
+	name                string
+	url                 string
+	expectedStatusCode  int
+	userIsLoggedIn      bool
+	checkPreviousStatus bool
 }{
-	{"home", "/", http.StatusOK},
-	{"about", "/about", http.StatusOK},
-	{"gq", "/generals-quoters", http.StatusOK},
-	{"ms", "/majors-suite", http.StatusOK},
-	{"sa", "/search-availability", http.StatusOK},
-	{"contact", "/contact", http.StatusOK},
+	{"home", "/", http.StatusOK, false, false},
+	{"about", "/about", http.StatusOK, false, false},
+	{"gq", "/generals-quoters", http.StatusOK, false, false},
+	{"ms", "/majors-suite", http.StatusOK, false, false},
+	{"sa", "/search-availability", http.StatusOK, false, false},
+	{"contact", "/contact", http.StatusOK, false, false},
+	{"non-existent", "/eggs/and/ham", http.StatusNotFound, false, false},
+	{"login", "/user/login", http.StatusOK, false, false},
+	{"logout", "/user/logout", http.StatusSeeOther, true, true},
+	{"dashboard", "/admin/dashboard", http.StatusOK, true, false},
+	{"dashboard-denied", "/admin/dashboard", http.StatusSeeOther, false, true},
+	{"new-reservations-success", "/admin/reservations-new", http.StatusOK, true, false},
+	{"new-reservations-denied", "/admin/reservations-new", http.StatusSeeOther, false, true},
+	{"all-reservations-success", "/admin/reservations-all", http.StatusOK, true, false},
+	{"all-reservations-denied", "/admin/reservations-all", http.StatusSeeOther, false, true},
+	{"show-reservation-success", "/admin/reservations/new/1", http.StatusOK, true, false},
+	{"show-reservation-denied", "/admin/reservations/new/1", http.StatusSeeOther, false, true},
 }
 
 func TestGetHandlers(t *testing.T) {
@@ -36,11 +49,13 @@ func TestGetHandlers(t *testing.T) {
 	defer ts.Close()
 
 	for _, e := range theTests {
+		IsAuthenticated = e.userIsLoggedIn
 		resp, err := ts.Client().Get(ts.URL + e.url)
 		if err != nil {
 			t.Errorf("%s: error running request: %q", e.name, err)
 		}
-		if resp.StatusCode != e.expectedStatusCode {
+		if !e.checkPreviousStatus && resp.StatusCode != e.expectedStatusCode ||
+			e.checkPreviousStatus && resp.Request.Response.StatusCode != e.expectedStatusCode {
 			t.Errorf("%s: bad status code. Expected %d, but got %d", e.name, e.expectedStatusCode, resp.StatusCode)
 		}
 	}
@@ -420,6 +435,50 @@ func TestRepository_BookRoom(t *testing.T) {
 			reservation := session.Get(ctx, "reservation").(models.Reservation)
 			if reservation.RoomId != expectedRoomId {
 				t.Errorf("%s: wrong room id in reservation; expected %d but got %d", e.name, expectedRoomId, reservation.RoomId)
+			}
+		}
+	}
+}
+
+func TestRepository_Login(t *testing.T) {
+	tests := []struct {
+		name               string
+		email              string
+		expectedStatusCode int
+		expectedHtml       string
+		expectedLocation   string
+	}{
+		{"valid-creds", "me@here.ca", http.StatusSeeOther, "", "/"},
+		{"invalid-creds", "jack@nimble.com", http.StatusSeeOther, "", "/user/login"},
+		{"validation-error", "this.is.not.an.email", http.StatusOK, `action="/user/login`, ""},
+	}
+
+	for _, e := range tests {
+		postedData := url.Values{
+			"email":    {e.email},
+			"password": {"password"},
+		}
+		req, _ := http.NewRequest("POST", "/user/login", strings.NewReader(postedData.Encode()))
+		ctx := getCtx(req)
+		req = req.WithContext(ctx)
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		rr := httptest.NewRecorder()
+		handler := http.HandlerFunc(Repo.PostShowLogin)
+		handler.ServeHTTP(rr, req)
+
+		if rr.Code != e.expectedStatusCode {
+			t.Errorf("%s: bad status code; expected %d but got %d", e.name, e.expectedStatusCode, rr.Code)
+		}
+		if e.expectedLocation != "" {
+			actualLocation, _ := rr.Result().Location()
+			if actualLocation.String() != e.expectedLocation {
+				t.Errorf("%s: bad location; expected %q, but got %q", e.name, e.expectedLocation, actualLocation.String())
+			}
+		}
+		if e.expectedHtml != "" {
+			actualHTML := rr.Body.String()
+			if !strings.Contains(actualHTML, e.expectedHtml) {
+				t.Errorf("%s: expected to find %q in result but did not; actual result is %q", e.name, e.expectedHtml, actualHTML)
 			}
 		}
 	}

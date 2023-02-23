@@ -343,7 +343,6 @@ func (m *Repository) ReservationSummary(w http.ResponseWriter, r *http.Request) 
 	const errMsg = "Cannot get reservation from the session"
 	reservation, ok := m.App.Session.Get(r.Context(), "reservation").(models.Reservation)
 	if !ok {
-		m.App.ErrorLog.Println(errMsg)
 		m.App.Session.Put(r.Context(), "error", errMsg)
 		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 		return

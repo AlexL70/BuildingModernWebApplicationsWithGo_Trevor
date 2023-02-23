@@ -24,6 +24,13 @@ import (
 var app config.AppConfig
 var session *scs.SessionManager
 var pathToTemplates = "./../../templates"
+var IsAuthenticated = false
+
+var functions = template.FuncMap{
+	"humanDate":  render.HumanDate,
+	"formatDate": render.FormatDate,
+	"iterate":    render.Iterate,
+}
 
 func TestMain(m *testing.M) {
 	// Configure application
@@ -35,6 +42,11 @@ func TestMain(m *testing.M) {
 
 	// Registering what we actually store in session
 	gob.Register(models.Reservation{})
+	gob.Register(models.User{})
+	gob.Register(models.Room{})
+	gob.Register(models.Restriction{})
+	gob.Register(map[string]int{})
+
 	// Creating a session instance
 	session = scs.New()
 	session.Lifetime = 24 * time.Hour
@@ -93,6 +105,23 @@ func getRoutes() http.Handler {
 	mux.Post("/make-reservation", Repo.PostReservation)
 	mux.Get("/reservation-summary", Repo.ReservationSummary)
 
+	mux.Get("/user/login", Repo.ShowLogin)
+	mux.Post("/user/login", Repo.PostShowLogin)
+	mux.Get("/user/logout", Repo.Logout)
+
+	mux.Route("/admin", func(mux chi.Router) {
+		mux.Use(Auth)
+		mux.Get("/dashboard", Repo.AdminDashboard)
+		mux.Get("/reservations-new", Repo.AdminNewReservations)
+		mux.Get("/reservations-all", Repo.AdminAllReservations)
+		mux.Get("/reservations-calendar", Repo.AdminReservationsCalendar)
+		mux.Post("/reservations-calendar", Repo.AdminPostReservationsCalendar)
+		mux.Get("/process-reservation/{src}/{id}", Repo.AdminProcessReservation)
+		mux.Get("/delete-reservation/{src}/{id}", Repo.AdminDeleteReservation)
+		mux.Get("/reservations/{src}/{id}", Repo.AdminShowReservation)
+		mux.Post("/reservations/{src}/{id}", Repo.AdminPostShowReservation)
+	})
+
 	fileServer := http.FileServer(http.Dir("./static/"))
 	mux.Handle("/static/*", http.StripPrefix("/static", fileServer))
 
@@ -129,7 +158,7 @@ func CreateTestTemplateCache() (map[string]*template.Template, error) {
 	}
 	for _, page := range pages {
 		name := filepath.Base(page)
-		ts, err := template.New(name).ParseFiles(page)
+		ts, err := template.New(name).Funcs(functions).ParseFiles(page)
 		if err != nil {
 			return myCache, err
 		}
@@ -143,4 +172,15 @@ func CreateTestTemplateCache() (map[string]*template.Template, error) {
 		myCache[name] = ts
 	}
 	return myCache, nil
+}
+
+func Auth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !IsAuthenticated {
+			app.Session.Put(r.Context(), "error", "Log in first!")
+			http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
