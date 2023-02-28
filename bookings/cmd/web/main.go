@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/gob"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -47,9 +48,20 @@ func main() {
 }
 
 func run() (*driver.DB, error) {
+	// Read flags
+	inProduction := flag.Bool("production", true, "Application is in production")
+	useCache := flag.Bool("cache", true, "Use template cache")
+	dbName := flag.String("dbname", "", "Database name")
+	dbUser := flag.String("dbuser", "", "Database user")
+	dbPassword := flag.String("dbpwd", "", "Database password")
+	dbHost := flag.String("dbhost", "localhost", "Database host")
+	dbPort := flag.String("dbport", "5432", "Database port")
+	dbSSL := flag.String("dbssl", "disable", "Database SSL settings (disable, prefer, require)")
+	flag.Parse()
+
 	// Configure application
 	// change it to true when in production
-	app.InProduction = false
+	app.InProduction = *inProduction
 
 	infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	app.InfoLog = infoLog
@@ -62,6 +74,7 @@ func run() (*driver.DB, error) {
 	gob.Register(models.Room{})
 	gob.Register(models.Restriction{})
 	gob.Register(map[string]int{})
+
 	// Create mail channel
 	mailChan := make(chan models.MailData)
 	app.MailChan = mailChan
@@ -75,7 +88,12 @@ func run() (*driver.DB, error) {
 
 	// connect to database
 	log.Println("Connecting to the database")
-	db, err := driver.ConnectSQL(os.Getenv("POSTGRESS_BOOKINGS_URL"))
+	connStr := os.Getenv("POSTGRESS_BOOKINGS_URL")
+	if connStr == "" {
+		connStr = fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=%s",
+			*dbHost, *dbPort, *dbName, *dbUser, *dbPassword, *dbSSL)
+	}
+	db, err := driver.ConnectSQL(connStr)
 	if err != nil {
 		log.Fatal(fmt.Errorf("cannot connect to the database: %w. Dying", err))
 	}
@@ -86,7 +104,7 @@ func run() (*driver.DB, error) {
 		return nil, fmt.Errorf("error creating template cache: %w", err)
 	}
 	app.TemplateCache = tc
-	app.UseCache = false
+	app.UseCache = *useCache
 	render.NewRenderer(&app)
 	repo := handlers.NewRepo(&app, db)
 	handlers.NewHandlers(repo)
