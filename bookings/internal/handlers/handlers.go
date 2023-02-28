@@ -247,9 +247,11 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 	reservation.Email = r.Form.Get("email")
 
 	form := forms.New(r.PostForm)
-	form.Required("first_name", "last_name", "email")
+	form.Required("first_name", "last_name", "email", "phone")
 	form.MinLength("first_name", 3)
+	form.MinLength("last_name", 3)
 	form.IsEmail("email")
+	form.MinLength("phone", 8)
 
 	if !form.Valid() {
 		data := map[string]any{}
