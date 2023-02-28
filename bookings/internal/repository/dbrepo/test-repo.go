@@ -7,10 +7,6 @@ import (
 	"github.com/AlexL70/BuildingModernWebApplicationsWithGo_Trevor/bookings/internal/models"
 )
 
-func (m *testDBRepo) AllUsers() bool {
-	return true
-}
-
 // InsertReservation inserts reservation into database
 func (m *testDBRepo) InsertReservation(res models.Reservation) (int, error) {
 	// if the room_id is 2 then fail, otherwise pass
@@ -84,39 +80,60 @@ func (m *testDBRepo) Authenticate(email, testPassword string) (int, string, erro
 // AllReservations returns a slice of all reservations
 func (m *testDBRepo) AllReservations() ([]models.Reservation, error) {
 	var reservations []models.Reservation
-	return reservations, nil
+	if !*m.FetchError {
+		return reservations, nil
+	}
+	return reservations, errors.New("error fetching reservations")
 }
 
 // NewReservations returns a slice of new reservations
 func (m *testDBRepo) NewReservations() ([]models.Reservation, error) {
 	var reservations []models.Reservation
-	return reservations, nil
+	if !*m.FetchError {
+		return reservations, nil
+	}
+	return reservations, errors.New("error fetching reservations")
 }
 
 // GetReservationByID gets reservation from the DB by ID
 func (m *testDBRepo) GetReservationByID(id int) (models.Reservation, error) {
 	var reservation models.Reservation
+	if *m.FetchError {
+		return reservation, errors.New("error fetching reservation")
+	}
 	return reservation, nil
 }
 
 // UpdateReservation updates reservation in the database
 func (m *testDBRepo) UpdateReservation(u models.Reservation) error {
+	if u.FirstName == "error" {
+		return errors.New("error updating reservation")
+	}
 	return nil
 }
 
 // DeleteReservation deletes one reservation from the DB by id
 func (m *testDBRepo) DeleteReservation(id int) error {
+	if id == 100 {
+		return errors.New("error deleting reservation")
+	}
 	return nil
 }
 
 // UpdateProcessedForReservation updates the processed field (status) of reservation by ID
 func (m *testDBRepo) UpdateProcessedForReservation(id, processed int) error {
+	if id == 100 {
+		return errors.New("error updating reservation")
+	}
 	return nil
 }
 
 // AllRooms returns all rooms from the database
 func (m *testDBRepo) AllRooms() ([]models.Room, error) {
 	var rooms []models.Room
+	if *m.FetchError {
+		return rooms, errors.New("error fetching rooms")
+	}
 	return rooms, nil
 }
 

@@ -10,10 +10,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (m *postgresDBRepo) AllUsers() bool {
-	return true
-}
-
 // InsertReservation inserts reservation into database
 func (m *postgresDBRepo) InsertReservation(res models.Reservation) (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

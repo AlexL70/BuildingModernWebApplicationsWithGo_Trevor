@@ -13,8 +13,9 @@ type postgresDBRepo struct {
 }
 
 type testDBRepo struct {
-	App *config.AppConfig
-	DB  *sql.DB
+	App        *config.AppConfig
+	DB         *sql.DB
+	FetchError *bool
 }
 
 func NewPostresRepo(conn *sql.DB, a *config.AppConfig) repository.DatabaseRepo {
@@ -24,9 +25,10 @@ func NewPostresRepo(conn *sql.DB, a *config.AppConfig) repository.DatabaseRepo {
 	}
 }
 
-func NewTestingRepo(a *config.AppConfig) repository.DatabaseRepo {
+func NewTestingRepo(a *config.AppConfig, fetchError *bool) repository.DatabaseRepo {
 	return &testDBRepo{
-		App: a,
-		DB:  nil,
+		App:        a,
+		DB:         nil,
+		FetchError: fetchError,
 	}
 }

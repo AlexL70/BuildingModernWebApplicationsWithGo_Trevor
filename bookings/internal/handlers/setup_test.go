@@ -25,6 +25,7 @@ var app config.AppConfig
 var session *scs.SessionManager
 var pathToTemplates = "./../../templates"
 var IsAuthenticated = false
+var fetchError = false
 
 var functions = template.FuncMap{
 	"humanDate":  render.HumanDate,
@@ -70,7 +71,7 @@ func TestMain(m *testing.M) {
 	render.NewRenderer(&app)
 	repo := &Repository{
 		App: &app,
-		DB:  dbrepo.NewTestingRepo(&app),
+		DB:  dbrepo.NewTestingRepo(&app, &fetchError),
 	}
 	NewHandlers(repo)
 	os.Exit(m.Run())
