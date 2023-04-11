@@ -256,7 +256,12 @@ func (m *Repository) PostReservation(w http.ResponseWriter, r *http.Request) {
 	if !form.Valid() {
 		data := map[string]any{}
 		data["reservation"] = reservation
-		http.Error(w, "Invalid form!", http.StatusBadRequest)
+		var errStr string = ""
+		for k, v := range form.Errors {
+			errStr = fmt.Sprintf("%s – %s <br>", k, v)
+		}
+		m.App.Session.Put(r.Context(), "error", errStr)
+		//http.Error(w, "Invalid form!", http.StatusBadRequest)
 		render.Template(w, r, "make-reservation.page.gohtml", &models.TemplateData{
 			Form: form,
 			Data: data,
